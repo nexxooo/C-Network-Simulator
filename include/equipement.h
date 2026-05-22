@@ -15,6 +15,7 @@
 
 #define TRAME_BOURRAGE_TAILLE 4
 
+
 typedef struct station {
     int8_t addr_mac[MAC_TAILLE];
     int8_t ip[IPV4_TAILLE];
