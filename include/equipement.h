@@ -15,29 +15,36 @@
 
 #define TRAME_BOURRAGE_TAILLE 4
 
+typedef struct MAC {
+  uint8_t bytes[6];
+} MAC;
+
+typedef struct IPV4 {
+  uint8_t bytes[4]; 
+} IPV4;
 
 typedef struct station {
-    int8_t addr_mac[MAC_TAILLE];
-    int8_t ip[IPV4_TAILLE];
+  MAC mac;
+  IPV4 ipv4;
 } station;
-
+typedef struct table_de_commutation {
+  MAC mac;
+  size_t interface_port;
+} table_de_commutation;
 typedef struct switch_ {
-    int8_t addrMac[MAC_TAILLE];
-    size_t nb_ports;
-    size_t priorite;
-    int32_t* table_commutation;
-    size_t nb_equipement;
-    size_t max_equipement;
+  MAC mac;
+  size_t nb_port;
+  size_t priorite;
+  table_de_commutation *tab;
+  size_t taille_tab;
+  size_t taille_max;
 
 } switch_;
 
 typedef struct reseau_local {
-    
-} reseau_local;
 
+} reseau_local;
 
 typedef struct trame {
 
 } trame;
-
-
