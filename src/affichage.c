@@ -12,3 +12,37 @@ void afficherIPV4(IPV4 *ip){
 void afficherMac(MAC *mac){
 	printf("%02X:%02X:%02X:%02X:%02X:%02X\n",mac->bytes[0],mac->bytes[1],mac->bytes[2],mac->bytes[3],mac->bytes[4],mac->bytes[5]);
 }
+
+MAC str_to_mac(char* str)
+{
+	MAC res;
+	int courant = 0;
+
+	char* token = strtok(str, ":");
+
+	while ( token != NULL )
+	{
+		res.bytes[courant] = (uint8_t) token;
+		token = strtok(NULL, ":");
+		courant++;
+
+	}
+	return res;
+}
+
+IPV4 str_to_ipv4(char* str)
+{
+	IPV4 res;
+	int courant;
+
+	char* token = strtok(str, ".");
+
+	while ( token != NULL )
+	{
+		res.bytes[courant] = stroi(token);
+		token = strtok(NULL, ":");
+		courant++;
+	}
+
+	return res;
+}

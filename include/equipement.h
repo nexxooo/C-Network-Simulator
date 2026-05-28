@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+#include "affichage.h"
 
 #define MAC_TAILLE 48
 #define IPV4_TAILLE 32
@@ -82,7 +85,9 @@ typedef enum Erreur_fichier
 {
   ERR_FICHIER_NON_TROUVE,
   ERR_OUVERTURE_IMPOSSIBLE,
-  ERR_INCONNU
+  ERR_LECTURE,
+  ERR_OK
 } Erreur_fichier;
 
 Erreur_fichier charger_reseau(char* fichier, reseau_local *r);
+bool ajouterEquipement(equipement e, reseau_local r);
