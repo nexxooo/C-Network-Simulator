@@ -1,5 +1,58 @@
 #include "equipement.h"
 
+bool init_reseau(reseau_local* r)
+{
+    r->equipement_capacite = CAPACITE_INITIALE;
+    r->equipements = malloc(CAPACITE_INITIALE * sizeof(equipement));
+
+    if ( r->equipements == NULL )
+        return false;
+
+    r->nb_equipements = 0;
+
+    r->nb_cables = 0;
+    r->cables_capacite = CAPACITE_INITIALE;
+    r->cables = malloc(CAPACITE_INITIALE * sizeof(cable));
+
+    if ( r->cables == NULL )
+        return false;
+    
+    return true;
+}
+
+bool free_reseau(reseau_local* r)
+{
+    r->cables_capacite = 0;
+    r->nb_cables = 0;
+    free(r->cables);
+    r->cables = NULL;
+    r->equipement_capacite = 0;
+    r->nb_equipements = 0;
+    free(r->equipements);
+    r->equipements = NULL;
+
+    return true;    
+}
+
+bool ajouter_equipement(equipement e, reseau_local* r)
+{
+    if ( r->nb_equipements >= r->equipement_capacite )
+    {
+        equipement* verif = realloc(r->equipements,
+             (r->equipement_capacite + TAILLE_REALOC) * sizeof(equipement));
+        
+        if ( verif == NULL )
+            return false;
+        
+        r->equipements = verif;
+        r->equipement_capacite += TAILLE_REALOC;
+    }
+
+    r->equipements[r->nb_equipements] = e;
+    r->nb_equipements++;
+    return true;
+}
+
 Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
 {
     FILE* fichier = fopen(fichier, "r");
@@ -10,10 +63,10 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
     char ligne[1024];
     fgets(ligne, sizeof(ligne), fichier );
 
-    r->nb_equipements_reseau = ligne[0];
+    r->nb_equipements = ligne[0];
     r->nb_cables = ligne[3];
 
-    for ( size_t eq = 0; eq < r->nb_equipements_reseau; eq++ )
+    for ( size_t eq = 0; eq < r->nb_equipements; eq++ )
     {
         fgets(ligne, sizeof(ligne), fichier);
 
@@ -28,6 +81,7 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
                 .type_equ = STATION,
                 .st = st
              };
+             ajouter_equipement(equ, r);
 
         }
         
@@ -46,12 +100,14 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
                         
             equipement equ = {
                 .type_equ = STATION,
-                .st = sw
+                .sw = sw
              };
-
-
+            
+             ajouter_equipement(equ, r);
         }
      }
+
+     
 
 
 }
