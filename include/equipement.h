@@ -1,12 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-
-#include "affichage.h"
+#include <string.h>
 
 #define MAC_TAILLE 48
 #define IPV4_TAILLE 32

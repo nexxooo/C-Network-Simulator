@@ -1,5 +1,5 @@
-#include "equipement.h"
-
+#include "../include/equipement.h"
+#include "../include/affichage.h"
 bool init_reseau(reseau_local* r)
 {
     r->equipement_capacite = CAPACITE_INITIALE;
@@ -55,20 +55,20 @@ bool ajouter_equipement(equipement e, reseau_local* r)
 
 Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
 {
-    FILE* fichier = fopen(fichier, "r");
+    FILE* f = fopen(fichier, "r");
 
     if ( fichier == NULL )
         return ERR_FICHIER_NON_TROUVE;
     
     char ligne[1024];
-    fgets(ligne, sizeof(ligne), fichier );
+    fgets(ligne, sizeof(ligne), f );
 
     r->nb_equipements = ligne[0];
     r->nb_cables = ligne[3];
 
     for ( size_t eq = 0; eq < r->nb_equipements; eq++ )
     {
-        fgets(ligne, sizeof(ligne), fichier);
+        fgets(ligne, sizeof(ligne), f);
 
         if ( ligne[0] == 1 )//station
         {
@@ -91,9 +91,9 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
             char* token = strtok(ligne, ";");
             sw.mac = str_to_mac(token);
             strtok(NULL, ";");
-            sw.nb_port = strol(token);
-            strok(NULL, ";");
-            sw.priorite = strol(token);
+            sw.nb_port = atoi(token);
+            strtok(NULL, ";");
+            sw.priorite = atoi(token);
             sw.taille_max = 24;
             sw.tab = malloc(sizeof(table_de_commutation) * 24 );
             sw.taille_tab = 0;
@@ -107,7 +107,7 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
         }
      }
 
-     
+     return ERR_OK;
 
 
 }
