@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -84,6 +85,13 @@ typedef struct reseau_local {
 } reseau_local;
 
 typedef struct trame {
+	MAC source;
+	MAC destination;
+	uint8_t SFD;
+	uint16_t type;
+	uint32_t FCS;
+	uint8_t préambule[7];
+	uint8_t data[1500];
 
 } trame;
 
