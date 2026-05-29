@@ -11,3 +11,5 @@ MAC str_to_mac(char* str);
 IPV4 str_to_ipv4(char* str);
 
 void afficher_table(switch_ *sw);
+void afficher_cables(const reseau_local* r);
+

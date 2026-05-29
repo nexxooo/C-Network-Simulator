@@ -11,5 +11,6 @@ int main(int argc, char *argv[]) {
   if ( charger_reseau("configs/config4.txt", &r) != ERR_OK )
     printf("Erreur dans le chargement\n");
   afficher_reseau(&r);
+  afficher_cables(&r);
   free_reseau(&r);
 }

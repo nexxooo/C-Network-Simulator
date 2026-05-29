@@ -20,6 +20,16 @@ void afficher_reseau(reseau_local *reseau) {
   printf("nombre de liaison: %zu\n", reseau->nb_cables);
 }
 
+void afficher_cables(const reseau_local* r)
+{
+  for ( int i = 0; i < r->nb_cables; i++ )
+  {
+    printf("%zu --> %zu\n", r->cables[i].sommet1,
+                                r->cables[i].sommet2);
+  }
+}
+
+
 void afficher_table(switch_ *sw) {
   if (sw->taille_tab == 0) {
     printf("table vide");
