@@ -57,7 +57,7 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
 {
     FILE* f = fopen(fichier, "r");
 
-    if ( fichier == NULL )
+    if ( f == NULL )
         return ERR_FICHIER_NON_TROUVE;
     
     char ligne[1024];

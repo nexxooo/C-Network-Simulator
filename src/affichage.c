@@ -13,6 +13,10 @@ void afficher_mac(MAC *mac){
 	printf("%02X:%02X:%02X:%02X:%02X:%02X\n",mac->bytes[0],mac->bytes[1],mac->bytes[2],mac->bytes[3],mac->bytes[4],mac->bytes[5]);
 }
 
+void afficher_reseau(reseau_local *rs){
+
+}
+
 MAC str_to_mac(char* str)
 {
 	MAC res;
