@@ -4,13 +4,10 @@
 #include <string.h>
 
 void afficher_mac(MAC *mac);
-void afficher_IPV4(IPV4 *ip);
+void afficher_ipv4(IPV4 *ip);
 void afficher_reseau(reseau_local *rs);
 //prends le mac au format str et renvoie un vrai mac
 MAC str_to_mac(char* str);
 IPV4 str_to_ipv4(char* str);
 
-void afficherMac(MAC *mac);
-void afficherIPV4(IPV4 *ip);
-void afficherReseau(reseau_local *reseau);
-void afficherTable(switch_ *sw);
+void afficher_table(switch_ *sw);

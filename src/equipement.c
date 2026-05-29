@@ -53,6 +53,26 @@ bool ajouter_equipement(equipement e, reseau_local* r)
     return true;
 }
 
+bool ajouter_cable(cable c, reseau_local* r)
+{
+    if ( r->nb_cables >= r->cables_capacite ) 
+    {
+        cable* verif = realloc(r->cables,
+             (r->cables_capacite + TAILLE_REALOC) * sizeof(cable));
+
+        if ( verif == NULL )
+            return false;
+
+        r->cables = verif;
+        r->cables_capacite += TAILLE_REALOC;
+    }
+
+    r->cables[r->nb_cables] = c;
+    r->nb_cables++;
+
+    return true;
+}
+
 Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
 {
     FILE* f = fopen(fichier, "r");
