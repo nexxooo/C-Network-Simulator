@@ -16,8 +16,8 @@ void afficher_mac(MAC *mac) {
 void afficher_reseau(reseau_local *reseau) {
   printf("RESEAU: \n");
   printf("_____________________________________________\n");
-  printf("nombre d'équipement: %lu\n", reseau->nb_equipements);
-  printf("nombre de liaison: %lu\n", reseau->nb_cables);
+  printf("nombre d'équipement: %zu\n", reseau->nb_equipements);
+  printf("nombre de liaison: %zu\n", reseau->nb_cables);
 }
 
 void afficher_table(switch_ *sw) {
@@ -46,16 +46,10 @@ void afficher_table(switch_ *sw) {
 MAC str_to_mac(char* str)
 {
 	MAC res;
-	int courant = 0;
-
-	char* token = strtok(str, ":");
-
-	while ( token != NULL )
-	{
-		res.bytes[courant] = (uint8_t) strtol(token, NULL, 16);
-		token = strtok(NULL, ":");
-		courant++;
-
+	unsigned int b[6];
+	sscanf(str, "%x:%x:%x:%x:%x:%x", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5]);
+	for(int i = 0; i < 6; i++) {
+		res.bytes[i] = (uint8_t)b[i];
 	}
 	return res;
 }
@@ -63,16 +57,10 @@ MAC str_to_mac(char* str)
 IPV4 str_to_ipv4(char* str)
 {
 	IPV4 res;
-	int courant = 0;
-
-	char* token = strtok(str, ".");
-
-	while ( token != NULL )
-	{
-		res.bytes[courant] = (uint8_t) atoi(token);
-		token = strtok(NULL, ".");
-		courant++;
+	unsigned int b[4];
+	sscanf(str, "%u.%u.%u.%u", &b[0], &b[1], &b[2], &b[3]);
+	for(int i = 0; i < 4; i++) {
+		res.bytes[i] = (uint8_t)b[i];
 	}
-
 	return res;
 }

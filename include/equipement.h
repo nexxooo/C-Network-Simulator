@@ -51,8 +51,8 @@ typedef struct switch_ {
 } switch_;
 
 typedef struct cable {
-  MAC sommet1;
-  MAC sommet2;
+  size_t sommet1;
+  size_t sommet2;
   size_t ponderation;
 } cable;
 
@@ -108,4 +108,4 @@ bool ajouter_equipement(equipement e, reseau_local* r);
 bool ajouter_cable(cable c, reseau_local* r);
 
 
-Erreur_fichier charger_reseau(char* fichier, reseau_local *r);
+Erreur_fichier charger_reseau(const char* fichier, reseau_local *r);
