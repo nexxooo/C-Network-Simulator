@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+#include "affichage.h"
 
 #define MAC_TAILLE 48
 #define IPV4_TAILLE 32
@@ -16,6 +19,10 @@
 #define TRAME_TYPE_TAILLE 2
 
 #define TRAME_BOURRAGE_TAILLE 4
+
+//constexpr peut etre?
+static size_t CAPACITE_INITIALE = 12;
+static size_t TAILLE_REALOC = 24;
 
 typedef struct MAC {
   uint8_t bytes[6];
@@ -63,13 +70,15 @@ typedef struct equipement {
 		station st;
 		switch_ sw;
 	}; //equipement est soi une station soit un switch
+
 } equipement;
 
 typedef struct reseau_local {
-	size_t ordre;
+	size_t equipement_capacite;
 	equipement* equipements;
+	size_t nb_equipements;
 
-	size_t nb_equipements_reseau;
+	size_t cables_capacite;
 	cable* cables;
 	size_t nb_cables;
 
@@ -90,7 +99,15 @@ typedef enum Erreur_fichier
 {
   ERR_FICHIER_NON_TROUVE,
   ERR_OUVERTURE_IMPOSSIBLE,
-  ERR_INCONNU
+  ERR_LECTURE,
+  ERR_OK
 } Erreur_fichier;
+
+bool init_reseau(reseau_local* r);
+bool free_reseau(reseau_local* r);
+
+bool ajouter_equipement(equipement e, reseau_local* r);
+bool ajouter_cable(cable c, reseau_local* r);
+
 
 Erreur_fichier charger_reseau(char* fichier, reseau_local *r);
