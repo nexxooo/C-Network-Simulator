@@ -53,6 +53,63 @@ void afficher_table(switch_ *sw) {
   }
 }
 
+void afficher_tram_user(trame *tr) {
+  printf("TRAM: \n ________________________________ \n adresse source:");
+  afficher_mac(&tr->source);
+  printf("destination:\n");
+  afficher_mac(&tr->destination);
+}
+
+void afficher_tram_brute(trame *tr) {
+  printf("TRAM BRUTE: \n");
+  for (int i = 0; i < 7; i++) {
+    printf("%02X ", tr->préambule[i]);
+  }
+  printf("%02X \n", tr->SFD);
+  for (int i = 0; i < 6; i++) {
+    printf("%02X ", tr->destination.bytes[i]);
+  }
+  for (int i = 0; i < 6; i++) {
+    printf("%02X ", tr->source.bytes[i]);
+  }
+  printf("\n");
+  printf("%02X \n", tr->type);
+  for (size_t i = 0; i < 1500; i++) {
+    printf("%02X ", tr->data[i]);
+    if ((i + 1) % 16 == 0) {
+      printf("\n");
+    }
+    printf("-------------------------------------\n");
+  }
+}
+
+MAC str_to_mac(char *str) {
+  MAC res;
+  int courant = 0;
+
+  char *token = strtok(str, ":");
+
+  while (token != NULL) {
+    res.bytes[courant] = (uint8_t)strtol(token, NULL, 16);
+    token = strtok(NULL, ":");
+    courant++;
+  }
+  return res;
+}
+
+IPV4 str_to_ipv4(char *str) {
+  IPV4 res;
+  int courant = 0;
+
+  char *token = strtok(str, ".");
+
+  while (token != NULL) {
+    res.bytes[courant] = (uint8_t)atoi(token);
+    token = strtok(NULL, ".");
+    courant++;
+  }
+
+  return res;
 MAC str_to_mac(char* str)
 {
 	MAC res;
