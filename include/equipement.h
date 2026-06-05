@@ -109,3 +109,4 @@ bool ajouter_cable(cable c, reseau_local* r);
 
 
 Erreur_fichier charger_reseau(const char* fichier, reseau_local *r);
+
