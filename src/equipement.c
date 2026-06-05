@@ -1,5 +1,6 @@
 #include "../include/equipement.h"
 #include "../include/affichage.h"
+
 bool init_reseau(reseau_local* r)
 {
     r->equipement_capacite = CAPACITE_INITIALE;
@@ -73,7 +74,7 @@ bool ajouter_cable(cable c, reseau_local* r)
     return true;
 }
 
-Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
+Erreur_fichier charger_reseau(const char* fichier, reseau_local *r)
 {
     FILE* f = fopen(fichier, "r");
 
@@ -81,45 +82,53 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
         return ERR_FICHIER_NON_TROUVE;
     
     char ligne[1024];
-    fgets(ligne, sizeof(ligne), f );
+    fgets(ligne, sizeof(ligne), f);
 
-    r->nb_equipements = ligne[0];
-    r->nb_cables = ligne[3];
+    size_t expected_equipements = 0;
+    size_t expected_cables = 0;
+    sscanf(ligne, "%zu %zu", &expected_equipements, &expected_cables);
 
-    for ( size_t eq = 0; eq < r->nb_equipements; eq++ )
+    for ( size_t eq = 0; eq < expected_equipements; eq++ )
     {
         fgets(ligne, sizeof(ligne), f);
+        ligne[strcspn(ligne, "\n")] = '\0';
 
-        if ( ligne[0] == 1 )//station
+        if ( ligne[0] == '1' )//station
         {
             station st;
-            char* token = strtok(ligne, ";"); //recuper mac
+            char* token = strtok(ligne, ";");
+            token = strtok(NULL, ";");
             st.mac = str_to_mac(token);
-            strtok(NULL, ";");
+            token = strtok(NULL, ";");
             st.ipv4 = str_to_ipv4(token);
+            
             equipement equ = {
                 .type_equ = STATION,
                 .st = st
              };
              ajouter_equipement(equ, r);
-
         }
-        
-        else if ( ligne[0] == 1 )//switch
+
+        else if ( ligne[0] == '2' )//switch
         {
             switch_ sw;
             char* token = strtok(ligne, ";");
+            token = strtok(NULL, ";");
+
             sw.mac = str_to_mac(token);
-            strtok(NULL, ";");
+            
+            token = strtok(NULL, ";");
             sw.nb_port = atoi(token);
-            strtok(NULL, ";");
+            
+            token = strtok(NULL, ";");
             sw.priorite = atoi(token);
+            
             sw.taille_max = 24;
             sw.tab = malloc(sizeof(table_de_commutation) * 24 );
             sw.taille_tab = 0;
                         
             equipement equ = {
-                .type_equ = STATION,
+                .type_equ = SWITCH,
                 .sw = sw
              };
             
@@ -127,7 +136,28 @@ Erreur_fichier charger_reseau(char* fichier, reseau_local *r)
         }
      }
 
+    for ( size_t c = 0; c < expected_cables; c++ )
+    {
+        fgets(ligne, sizeof(ligne), f);
+        ligne[strcspn(ligne, "\n")] = '\0';
+
+        char* token = strtok(ligne, ";");
+        size_t sommet1 = (size_t)strtoul(token, NULL, 10);
+
+        token = strtok(NULL, ";");
+        size_t sommet2 = (size_t)strtoul(token, NULL, 10);
+
+        token = strtok(NULL, ";");
+        size_t poids = (size_t)strtoul(token, NULL, 10);
+
+        cable cab = {
+            .sommet1 = sommet1,
+            .sommet2 = sommet2,
+            .ponderation = poids
+        };
+        ajouter_cable(cab, r);
+    }
+
+     fclose(f);
      return ERR_OK;
-
-
 }
