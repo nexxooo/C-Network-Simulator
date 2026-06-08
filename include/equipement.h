@@ -101,11 +101,22 @@ typedef enum Erreur_fichier
   ERR_OK
 } Erreur_fichier;
 
+typedef struct BPDU
+{
+	size_t racine_id;
+	size_t cout;
+	MAC transmetteur_id;
+
+} BPDU;
+	
+
 bool init_reseau(reseau_local* r);
 bool free_reseau(reseau_local* r);
 
 bool ajouter_equipement(equipement e, reseau_local* r);
 bool ajouter_cable(cable c, reseau_local* r);
+
+MAC meilleureMac(MAC m1, MAC m2);
 
 
 Erreur_fichier charger_reseau(const char* fichier, reseau_local *r);
