@@ -1,0 +1,19 @@
+BasedOnStyle: LLVM
+
+# --- Indentation ---
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# --- Espaces autour des structures de contrôle ---
+SpaceAfterControlStatementKeyword: true
+SpaceBeforeParens: ControlStatements
+SpacesInConditionalStatement: true
+
+# --- Accolades en début de ligne ---
+BreakBeforeBraces: Allman
+
+# --- Style général ---
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: false
+ColumnLimit: 0

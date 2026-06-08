@@ -1,9 +1,9 @@
 #pragma once
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAC_TAILLE 48
@@ -18,106 +18,101 @@
 
 #define TRAME_BOURRAGE_TAILLE 4
 
-//constexpr peut etre?
+// constexpr peut etre?
 static size_t CAPACITE_INITIALE = 12;
 static size_t TAILLE_REALOC = 24;
 
 typedef struct MAC {
-  uint8_t bytes[6];
+    uint8_t bytes[6];
 } MAC;
 
 typedef struct IPV4 {
-  uint8_t bytes[4]; 
+    uint8_t bytes[4];
 } IPV4;
 
 typedef struct station {
-  MAC mac;
-  IPV4 ipv4;
+    MAC mac;
+    IPV4 ipv4;
 } station;
 
 typedef struct table_de_commutation {
-  MAC mac;
-  size_t interface_port;
+    MAC mac;
+    size_t interface_port;
 } table_de_commutation;
 
 typedef struct switch_ {
-  MAC mac;
-  size_t nb_port;
-  size_t priorite;
-  table_de_commutation *tab;
-  size_t taille_tab;
-  size_t taille_max;
+    MAC mac;
+    size_t nb_port;
+    size_t priorite;
+    table_de_commutation *tab;
+    size_t taille_tab;
+    size_t taille_max;
 
 } switch_;
 
 typedef struct cable {
-  size_t sommet1;
-  size_t sommet2;
-  size_t ponderation;
+    size_t sommet1;
+    size_t sommet2;
+    size_t ponderation;
 } cable;
 
 typedef enum type_equipement {
-	STATION,
-	SWITCH
+    STATION,
+    SWITCH
 
 } type_equipement;
 
 typedef struct equipement {
-	type_equipement type_equ;
-	union {	
-		station st;
-		switch_ sw;
-	}; //equipement est soi une station soit un switch
+    type_equipement type_equ;
+    union {
+        station st;
+        switch_ sw;
+    }; // equipement est soi une station soit un switch
 
 } equipement;
 
 typedef struct reseau_local {
-	size_t equipement_capacite;
-	equipement* equipements;
-	size_t nb_equipements;
+    size_t equipement_capacite;
+    equipement *equipements;
+    size_t nb_equipements;
 
-	size_t cables_capacite;
-	cable* cables;
-	size_t nb_cables;
+    size_t cables_capacite;
+    cable *cables;
+    size_t nb_cables;
 
 } reseau_local;
 
 typedef struct trame {
-	MAC source;
-	MAC destination;
-	uint8_t SFD;
-	uint16_t type;
-	uint32_t FCS;
-	uint8_t préambule[7];
-	uint8_t data[1500];
+    MAC source;
+    MAC destination;
+    uint8_t SFD;
+    uint16_t type;
+    uint32_t FCS;
+    uint8_t préambule[7];
+    uint8_t data[1500];
 
 } trame;
 
-typedef enum Erreur_fichier
-{
-  ERR_FICHIER_NON_TROUVE,
-  ERR_OUVERTURE_IMPOSSIBLE,
-  ERR_LECTURE,
-  ERR_OK
+typedef enum Erreur_fichier {
+    ERR_FICHIER_NON_TROUVE,
+    ERR_OUVERTURE_IMPOSSIBLE,
+    ERR_LECTURE,
+    ERR_OK
 } Erreur_fichier;
 
-typedef struct BPDU
-{
-	size_t racine_id;
-	size_t cout;
-	MAC transmetteur_id;
+typedef struct BPDU {
+    size_t racine_id;
+    size_t cout;
+    MAC transmetteur_id;
 
 } BPDU;
-	
 
-bool init_reseau(reseau_local* r);
-bool free_reseau(reseau_local* r);
+bool init_reseau(reseau_local *r);
+bool free_reseau(reseau_local *r);
 
-bool ajouter_equipement(equipement e, reseau_local* r);
-bool ajouter_cable(cable c, reseau_local* r);
+bool ajouter_equipement(equipement e, reseau_local *r);
+bool ajouter_cable(cable c, reseau_local *r);
 
 MAC meilleureMac(MAC *m1, MAC *m2);
 
-
-Erreur_fichier charger_reseau(const char* fichier, reseau_local *r);
-
+Erreur_fichier charger_reseau(const char *fichier, reseau_local *r);
