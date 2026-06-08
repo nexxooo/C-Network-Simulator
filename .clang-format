@@ -13,7 +13,10 @@ SpacesInConditionalStatement: true
 # --- Accolades en début de ligne ---
 BreakBeforeBraces: Allman
 
-# --- Style général ---
+# --- Simplification des if/for/while à une seule ligne ---
 AllowShortIfStatementsOnASingleLine: true
+RemoveBracesLLVM: true
+
+# --- Style général ---
 AllowShortLoopsOnASingleLine: false
 ColumnLimit: 0

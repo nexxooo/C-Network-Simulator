@@ -158,11 +158,7 @@ MAC meilleureMac(MAC *m1, MAC *m2)
     int res;
     res = memcmp(m1, m2, sizeof(&m1));
     if ( res > 0 )
-    {
         return *m1;
-    }
     else
-    {
         return *m2;
-    }
 }

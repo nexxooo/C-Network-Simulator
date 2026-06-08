@@ -26,10 +26,8 @@ void afficher_reseau(reseau_local *reseau)
 void afficher_cables(const reseau_local *r)
 {
     for ( int i = 0; i < r->nb_cables; i++ )
-    {
         printf("%zu --> %zu\n", r->cables[i].sommet1,
                r->cables[i].sommet2);
-    }
 }
 
 void afficher_table(switch_ *sw)
@@ -41,27 +39,17 @@ void afficher_table(switch_ *sw)
     else
     {
         for ( int i = 0; i < sw->nb_port; i++ )
-        {
             printf("|          port: %i           ", i);
-        }
         MAC *tab[sw->taille_tab];
         for ( int i = 0; i < sw->taille_tab; i++ )
-        {
             tab[sw->tab[i].interface_port] = &sw->tab[i].mac;
-        }
         for ( int i = 0; i < sw->nb_port; i++ )
-        {
             if ( tab[i] == NULL )
-            {
                 printf("| NULL      ");
-            }
             else
-            {
                 printf("| %02X:%02X:%02X:%02X:%02X:%02X\n", tab[i]->bytes[0],
                        tab[i]->bytes[1], tab[i]->bytes[2], tab[i]->bytes[3],
                        tab[i]->bytes[4], tab[i]->bytes[5]);
-            }
-        }
     }
 }
 
@@ -77,27 +65,19 @@ void afficher_tram_brute(trame *tr)
 {
     printf("TRAM BRUTE: \n");
     for ( int i = 0; i < 7; i++ )
-    {
         printf("%02X ", tr->préambule[i]);
-    }
     printf("%02X \n", tr->SFD);
     for ( int i = 0; i < 6; i++ )
-    {
         printf("%02X ", tr->destination.bytes[i]);
-    }
     for ( int i = 0; i < 6; i++ )
-    {
         printf("%02X ", tr->source.bytes[i]);
-    }
     printf("\n");
     printf("%02X \n", tr->type);
     for ( size_t i = 0; i < 1500; i++ )
     {
         printf("%02X ", tr->data[i]);
         if ( (i + 1) % 16 == 0 )
-        {
             printf("\n");
-        }
         printf("-------------------------------------\n");
     }
 }
@@ -107,12 +87,8 @@ MAC str_to_mac(char *str)
     MAC res = {0};
     unsigned int b[6];
     if ( sscanf(str, "%x:%x:%x:%x:%x:%x", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5]) == 6 )
-    {
         for ( int i = 0; i < 6; i++ )
-        {
             res.bytes[i] = (uint8_t)b[i];
-        }
-    }
     return res;
 }
 
@@ -121,11 +97,7 @@ IPV4 str_to_ipv4(char *str)
     IPV4 res = {0};
     unsigned int b[4];
     if ( sscanf(str, "%u.%u.%u.%u", &b[0], &b[1], &b[2], &b[3]) == 4 )
-    {
         for ( int i = 0; i < 4; i++ )
-        {
             res.bytes[i] = (uint8_t)b[i];
-        }
-    }
     return res;
 }
