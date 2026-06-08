@@ -6,19 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAC_TAILLE 48
-#define IPV4_TAILLE 32
-#define IPV6_TAILLE 128
-
-#define TRAME_PREAMBULE_TAILLE 7
-#define TRAME_SFD_TAILLE 1
-#define TRAME_DESTINATION_TAILLE 6
-#define TRAME_SOURCE_TAILLE 6
-#define TRAME_TYPE_TAILLE 2
-
-#define TRAME_BOURRAGE_TAILLE 4
-
-// constexpr peut etre?
 static size_t CAPACITE_INITIALE = 12;
 static size_t TAILLE_REALOC = 24;
 
@@ -44,14 +31,34 @@ typedef struct table_de_commutation
     size_t interface_port;
 } table_de_commutation;
 
+typedef enum etat_port
+{
+    ETAT_PORT_BLOQUE,
+    ETAT_PORT_INCONNU,
+    ETAT_PORT_DESIGNE,
+    ETAT_PORT_RACINE
+} etat_port;
+
+
+typedef struct port
+{
+    size_t numero_port;
+    etat_port etat;
+} port;
+
 typedef struct switch_
 {
     MAC mac;
     size_t nb_port;
+    port* ports;
     size_t priorite;
     table_de_commutation *tab;
     size_t taille_tab;
     size_t taille_max;
+
+    port port_racine;
+    size_t cout_vers_racine;
+    MAC racine;
 
 } switch_;
 
@@ -126,6 +133,6 @@ bool free_reseau(reseau_local *r);
 bool ajouter_equipement(equipement e, reseau_local *r);
 bool ajouter_cable(cable c, reseau_local *r);
 
-MAC meilleureMac(MAC *m1, MAC *m2);
+bool mac_est_meilleure(MAC* mac1, MAC* mac2);
 
 Erreur_fichier charger_reseau(const char *fichier, reseau_local *r);

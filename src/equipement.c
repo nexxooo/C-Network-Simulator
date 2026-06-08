@@ -1,6 +1,7 @@
 #include "../include/equipement.h"
 #include "../include/affichage.h"
 #include <string.h>
+
 bool init_reseau(reseau_local *r)
 {
     r->equipement_capacite = CAPACITE_INITIALE;
@@ -32,6 +33,27 @@ bool free_reseau(reseau_local *r)
     free(r->equipements);
     r->equipements = NULL;
 
+    return true;
+}
+
+bool init_switch(switch_ *sw, size_t nb_port)
+{
+    sw->tab = malloc(sizeof(table_de_commutation) * sw->taille_max);
+    if ( sw->tab == NULL )
+        return false;
+    sw->taille_tab = 0;
+
+    sw->ports = malloc(sizeof(port) * sw->nb_port);
+    if ( sw->ports == NULL )
+    {
+        free(sw->tab);
+        sw->tab = NULL;
+        return false;
+    }
+
+    for ( size_t i = 0; i < sw->nb_port; i++ )
+        sw->ports[i].etat = ETAT_PORT_INCONNU;
+    
     return true;
 }
 
@@ -121,9 +143,7 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
             token = strtok(NULL, ";");
             sw.priorite = atoi(token);
 
-            sw.taille_max = 24;
-            sw.tab = malloc(sizeof(table_de_commutation) * 24);
-            sw.taille_tab = 0;
+            init_switch(&sw, sw.nb_port);
 
             equipement equ = {.type_equ = SWITCH, .sw = sw};
 
@@ -153,12 +173,14 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
     return ERR_OK;
 }
 
-MAC meilleureMac(MAC *m1, MAC *m2)
+bool mac_est_meilleure(MAC* mac1, MAC* mac2)
 {
-    int res;
-    res = memcmp(m1, m2, sizeof(&m1));
-    if ( res > 0 )
-        return *m1;
-    else
-        return *m2;
+    for ( size_t i = 0; i < 6; i++ )
+    {
+        if ( mac1->bytes[i] < mac2->bytes[i] )
+            return true;
+        else if ( mac1->bytes[i] > mac2->bytes[i] )
+            return false;
+    }
+    return false;
 }
