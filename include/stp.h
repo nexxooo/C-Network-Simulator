@@ -2,5 +2,4 @@
 
 #include "equipement.h"
 
-
-bool stp_init(reseau_local* r);
+bool stp_init(reseau_local *r);

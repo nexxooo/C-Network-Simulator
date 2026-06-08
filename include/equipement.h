@@ -22,25 +22,30 @@
 static size_t CAPACITE_INITIALE = 12;
 static size_t TAILLE_REALOC = 24;
 
-typedef struct MAC {
+typedef struct MAC
+{
     uint8_t bytes[6];
 } MAC;
 
-typedef struct IPV4 {
+typedef struct IPV4
+{
     uint8_t bytes[4];
 } IPV4;
 
-typedef struct station {
+typedef struct station
+{
     MAC mac;
     IPV4 ipv4;
 } station;
 
-typedef struct table_de_commutation {
+typedef struct table_de_commutation
+{
     MAC mac;
     size_t interface_port;
 } table_de_commutation;
 
-typedef struct switch_ {
+typedef struct switch_
+{
     MAC mac;
     size_t nb_port;
     size_t priorite;
@@ -50,28 +55,33 @@ typedef struct switch_ {
 
 } switch_;
 
-typedef struct cable {
+typedef struct cable
+{
     size_t sommet1;
     size_t sommet2;
     size_t ponderation;
 } cable;
 
-typedef enum type_equipement {
+typedef enum type_equipement
+{
     STATION,
     SWITCH
 
 } type_equipement;
 
-typedef struct equipement {
+typedef struct equipement
+{
     type_equipement type_equ;
-    union {
+    union
+    {
         station st;
         switch_ sw;
     }; // equipement est soi une station soit un switch
 
 } equipement;
 
-typedef struct reseau_local {
+typedef struct reseau_local
+{
     size_t equipement_capacite;
     equipement *equipements;
     size_t nb_equipements;
@@ -82,7 +92,8 @@ typedef struct reseau_local {
 
 } reseau_local;
 
-typedef struct trame {
+typedef struct trame
+{
     MAC source;
     MAC destination;
     uint8_t SFD;
@@ -93,14 +104,16 @@ typedef struct trame {
 
 } trame;
 
-typedef enum Erreur_fichier {
+typedef enum Erreur_fichier
+{
     ERR_FICHIER_NON_TROUVE,
     ERR_OUVERTURE_IMPOSSIBLE,
     ERR_LECTURE,
     ERR_OK
 } Erreur_fichier;
 
-typedef struct BPDU {
+typedef struct BPDU
+{
     size_t racine_id;
     size_t cout;
     MAC transmetteur_id;
