@@ -1,4 +1,4 @@
-# Simulation de Réseau Local (LAN) - SAE S2.01
+# Simulation de Réseau Local (LAN)
 
 Ce projet en langage C propose une modélisation et une simulation d'un réseau local (LAN) composé de stations de travail et de commutateurs (switches) reliés par des câbles réseau. Il permet de charger dynamiquement des topologies réseau complexes depuis des fichiers de configuration, d'initialiser les tables de commutation et de manipuler des trames Ethernet.
 
