@@ -196,3 +196,67 @@ bool mac_est_egale(MAC* mac1, MAC* mac2)
     }
     return true;
 }
+
+bool est_un_arbre(reseau_local* r)
+{
+    // nb_aretes = ordre - 1
+    if ( reseau_est_connexe(r) && r->nb_cables == r->nb_equipements - 1 )
+        return true;
+    return false;
+}
+
+size_t sommets_adjacent(const reseau_local* r, size_t sommet, size_t* adjacents)
+{
+    size_t n_adj = 0;
+    size_t deg = r->nb_cables;
+
+    for ( size_t i = 0; i < deg; i++ )
+    {
+        if ( r->cables[i].sommet1 == sommet )
+            adjacents[n_adj++] = r->cables[i].sommet2;
+        else if ( r->cables[i].sommet2 == sommet )
+            adjacents[n_adj++] = r->cables[i].sommet1;
+    }
+
+    return n_adj;
+}
+
+void visite_composante_connexe(reseau_local const* g, size_t ind_equip, bool *visite)
+{
+    visite[ind_equip] = true;
+
+    size_t adjacents[g->nb_equipements];
+    size_t n_adj = sommets_adjacent(g, ind_equip, adjacents);
+
+    for ( size_t i = 0; i < n_adj; i++ )
+    {
+        if ( !visite[adjacents[i]] )
+            visite_composante_connexe(g, adjacents[i], visite);
+    }
+}
+
+bool reseau_est_connexe(reseau_local* r)
+{
+    bool visite[r->nb_equipements];
+    for (size_t i = 0; i < r->nb_equipements; i++)
+        visite[i] = false;
+
+    uint32_t nbComposantes = 0;
+
+    for ( size_t s = 0; s < r->nb_equipements; s++ )
+    {
+        if ( !visite[s] )
+        {
+            visite_composante_connexe(r,s, visite);
+            nbComposantes++;
+        }
+    }
+
+    return nbComposantes == 1;
+}
+
+bool cable_est_relie(cable* c, size_t sommet1, size_t sommet2)
+{
+    return (c->sommet1 == sommet1 && c->sommet2 == sommet2) ||
+           (c->sommet1 == sommet2 && c->sommet2 == sommet1);
+}

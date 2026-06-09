@@ -142,3 +142,13 @@ bool mac_est_meilleure(MAC *mac1, MAC *mac2);
 bool mac_est_egale(MAC *mac1, MAC *mac2);
 
 Erreur_fichier charger_reseau(const char *fichier, reseau_local *r);
+
+bool est_un_arbre(reseau_local* r);
+
+size_t sommets_adjacent(const reseau_local* r, size_t sommet, size_t* adjacents);
+
+void visite_composante_connexe(reseau_local const* g, size_t ind_equip, bool *visite);
+
+bool reseau_est_connexe(reseau_local* r);
+
+bool cable_est_relie(cable* c, size_t sommet1, size_t sommet2);
