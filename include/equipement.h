@@ -44,6 +44,22 @@ typedef struct table_de_commutation
     size_t interface_port;
 } table_de_commutation;
 
+typedef enum port_statut
+{
+    PORT_BLOCKED = 'B',
+    PORT_ROOT = 'R',
+    PORT_DESIGNATED = 'D',
+    PORT_UNDEFINED = 'U'
+} port_statut;
+
+typedef struct switch_port
+{
+    size_t port_index;
+    size_t equipement_voisin; // index in r->equipements
+    size_t cable_index;       // index in r->cables
+    port_statut statut;
+} switch_port;
+
 typedef struct switch_
 {
     MAC mac;
@@ -52,6 +68,7 @@ typedef struct switch_
     table_de_commutation *tab;
     size_t taille_tab;
     size_t taille_max;
+    switch_port *ports; // Array of size nb_port
 
 } switch_;
 
@@ -112,13 +129,8 @@ typedef enum Erreur_fichier
     ERR_OK
 } Erreur_fichier;
 
-typedef struct BPDU
-{
-    size_t racine_id;
-    size_t cout;
-    MAC transmetteur_id;
-
-} BPDU;
+void transmettre_trame(reseau_local *r, trame *t, size_t actuel_idx, int port_entree_idx, int depth);
+void mettre_a_jour_table(switch_ *sw, MAC mac, size_t port);
 
 bool init_reseau(reseau_local *r);
 bool free_reseau(reseau_local *r);
