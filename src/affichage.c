@@ -15,6 +15,17 @@ void afficher_mac(MAC *mac)
            mac->bytes[2], mac->bytes[3], mac->bytes[4], mac->bytes[5]);
 }
 
+void mac_to_str(MAC *mac, char *buffer)
+{
+    sprintf(buffer, "%02X:%02X:%02X:%02X:%02X:%02X", mac->bytes[0], mac->bytes[1],
+            mac->bytes[2], mac->bytes[3], mac->bytes[4], mac->bytes[5]);
+}
+void ip_to_str(IPV4 *ip, char *buffer)
+{
+    sprintf(buffer, "%i.%i.%i.%i\n", ip->bytes[0], ip->bytes[1], ip->bytes[2],
+            ip->bytes[3]);
+}
+
 void afficher_reseau(reseau_local *reseau)
 {
     printf("RESEAU: \n");
@@ -24,25 +35,36 @@ void afficher_reseau(reseau_local *reseau)
 
     for ( size_t i = 0; i < reseau->nb_equipements; i++ )
     {
+        printf("----------------------------------------------------------------------------\n");
         printf("equipement %zu: ", i);
         if ( reseau->equipements[i].type_equ == SWITCH )
         {
-            printf("SWITCH\n");
+            printf("SWITCH ");
             switch_ *sw = &reseau->equipements[i].sw;
-            printf("nombre de ports: %zu\n", sw->nb_port);
-            printf("adresse mac: ");
-            afficher_mac(&sw->mac);
+            printf("nombre de ports: %zu ", sw->nb_port);
+            char macstr[19];
+            mac_to_str(&sw->mac, macstr);
+            printf("adresse mac: %s ", macstr);
+
+            // afficher_mac(&sw->mac);
             printf("table de commutation:\n");
             afficher_table(sw);
+            printf("\n-----------------------------------------------");
         }
         else
         {
-            printf("HOTE\n");
-            station* st = &reseau->equipements[i].st;
-            printf("adresse mac: ");
-            afficher_mac(&st->mac);
-            printf("adresse ipv4: ");
-            afficher_ipv4(&st->ipv4);
+
+            printf("HOTE ");
+            station *st = &reseau->equipements[i].st;
+            char macstr[19];
+            mac_to_str(&st->mac, macstr);
+            printf("adresse mac: %s", macstr);
+            // afficher_mac(&st->mac);
+            char ipstr[17];
+            ip_to_str(&st->ipv4, ipstr);
+            printf("adresse ipv4: %s ", ipstr);
+            // afficher_ipv4(&st->ipv4);
+            printf("----------------------------------------------------------------------------\n");
         }
     }
 }

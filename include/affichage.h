@@ -12,5 +12,7 @@ void afficher_tram_brute(trame *tr);
 MAC str_to_mac(char *str);
 IPV4 str_to_ipv4(char *str);
 
+void mac_to_str(MAC *mac,char *buffer);
+
 void afficher_table(switch_ *sw);
 void afficher_cables(const reseau_local *r);
