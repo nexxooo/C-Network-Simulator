@@ -58,7 +58,7 @@ void afficher_reseau(reseau_local *reseau)
             station *st = &reseau->equipements[i].st;
             char macstr[19];
             mac_to_str(&st->mac, macstr);
-            printf("adresse mac: %s", macstr);
+            printf("adresse mac: %s ", macstr);
             // afficher_mac(&st->mac);
             char ipstr[17];
             ip_to_str(&st->ipv4, ipstr);
