@@ -52,7 +52,10 @@ bool init_switch(switch_ *sw, size_t nb_port)
     }
 
     for (size_t i = 0; i < sw->nb_port; i++)
+    {
+        sw->ports[i].numero_port = i;
         sw->ports[i].etat = ETAT_PORT_INCONNU;
+    }
     
     return true;
 }

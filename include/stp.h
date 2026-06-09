@@ -17,3 +17,7 @@ trame creer_trame_bpdu(MAC source, MAC destination, BPDU* bpdu);
 //probablement utiliser lalgorithme de djisktra ou une saloperie du genre
 size_t distance_vers_racine(reseau_local* r, equipement* equ);
 size_t get_index_racine(reseau_local* r);
+
+size_t obtenir_port_local(reseau_local *r, size_t sw_idx, size_t cable_idx);
+void stp_resoudre_ports(reseau_local *r);
+

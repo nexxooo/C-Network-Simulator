@@ -56,6 +56,10 @@ bool stp_init(reseau_local *r)
             transmettre_bpdu(r, i, &bpdu);
         }
     }
+    
+    /* Résoudre l'état de tous les ports (RACINE, DESIGNE, BLOQUE) après convergence */
+    stp_resoudre_ports(r);
+    
     return true;
 }
 
@@ -158,8 +162,9 @@ bool transmettre_bpdu(reseau_local *r, size_t id_switch, BPDU *bpdu)
                 voisin->racine = r->equipements[bpdu_recu.racine_id].sw.mac;
             voisin->cout_vers_racine = bpdu_recu.cout;
 
-            /* Marquer le port racine du voisin (index du câble = port d'entrée) */
-            voisin->port_racine.numero_port = cable_idx;
+            /* Marquer le port racine du voisin en trouvant son numéro de port local */
+            size_t port_local = obtenir_port_local(r, voisin_id, cable_idx);
+            voisin->port_racine.numero_port = port_local;
             voisin->port_racine.etat = ETAT_PORT_RACINE;
 
             /* Propager depuis le voisin avec son propre MAC comme transmetteur */
@@ -263,3 +268,88 @@ size_t distance_vers_racine(reseau_local *r, equipement *equ)
 
     return dist[idx_racine];
 }
+
+size_t obtenir_port_local(reseau_local *r, size_t sw_idx, size_t cable_idx)
+{
+    size_t port_loc = 0;
+    for (size_t i = 0; i < r->nb_cables; i++)
+    {
+        if (r->cables[i].sommet1 == sw_idx || r->cables[i].sommet2 == sw_idx)
+        {
+            if (i == cable_idx)
+                return port_loc;
+            port_loc++;
+        }
+    }
+    return SIZE_MAX;
+}
+
+void stp_resoudre_ports(reseau_local *r)
+{
+    size_t racine_idx = get_index_racine(r);
+    if (racine_idx == SIZE_MAX) return;
+
+    for (size_t i = 0; i < r->nb_equipements; i++)
+    {
+        if (r->equipements[i].type_equ != SWITCH)
+            continue;
+
+        switch_ *sw = &r->equipements[i].sw;
+
+        // 1. Initialiser tous les ports du switch à BLOQUÉ par défaut
+        for (size_t p = 0; p < sw->nb_port; p++) {
+            sw->ports[p].etat = ETAT_PORT_BLOQUE;
+        }
+
+        // Si c'est le commutateur racine, tous ses ports connectés deviennent DÉSIGNÉS
+        if (i == racine_idx) {
+            for (size_t p = 0; p < sw->nb_port; p++) {
+                sw->ports[p].etat = ETAT_PORT_DESIGNE;
+            }
+            continue;
+        }
+
+        // 2. Activer son Port Racine (Root Port)
+        size_t root_port_local = sw->port_racine.numero_port;
+        if (root_port_local < sw->nb_port) {
+            sw->ports[root_port_local].etat = ETAT_PORT_RACINE;
+        }
+
+        // 3. Déterminer les ports désignés pour les autres liaisons
+        size_t port_loc = 0;
+        for (size_t c = 0; c < r->nb_cables; c++)
+        {
+            if (r->cables[c].sommet1 == i || r->cables[c].sommet2 == i)
+            {
+                // On passe le port racine local (déjà configuré)
+                if (port_loc == root_port_local) {
+                    port_loc++;
+                    continue;
+                }
+
+                size_t voisin_idx = (r->cables[c].sommet1 == i) ? r->cables[c].sommet2 : r->cables[c].sommet1;
+
+                // Si le voisin est une station, le port est DÉSIGNÉ
+                if (r->equipements[voisin_idx].type_equ == STATION) {
+                    sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
+                }
+                // Si le voisin est un switch, on compare les coûts vers la racine
+                else if (r->equipements[voisin_idx].type_equ == SWITCH) {
+                    switch_ *v_sw = &r->equipements[voisin_idx].sw;
+
+                    if (sw->cout_vers_racine < v_sw->cout_vers_racine) {
+                        sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
+                    }
+                    else if (sw->cout_vers_racine == v_sw->cout_vers_racine) {
+                        // Si même coût, comparaison par MAC address
+                        if (mac_est_meilleure(&sw->mac, &v_sw->mac)) {
+                            sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
+                        }
+                    }
+                }
+                port_loc++;
+            }
+        }
+    }
+}
+
