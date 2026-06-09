@@ -39,10 +39,20 @@ typedef enum etat_port
     ETAT_PORT_RACINE
 } etat_port;
 
+typedef struct BPDU
+{
+    size_t racine_id;
+    size_t cout;
+    MAC transmetteur_id;
+
+} BPDU;
+
 typedef struct port
 {
     size_t numero_port;
     etat_port etat;
+    BPDU meilleur_bpdu_recu; /* Meilleur message 802.1d reçu sur ce port */
+    bool a_recu_bpdu;        /* Indique si un BPDU a été reçu sur ce port */
 } port;
 
 typedef struct switch_
@@ -106,15 +116,6 @@ typedef enum Erreur_fichier
     ERR_OK
 } Erreur_fichier;
 
-/* Protocole STP - doit être déclaré avant trame */
-typedef struct BPDU
-{
-    size_t racine_id;
-    size_t cout;
-    MAC transmetteur_id;
-
-} BPDU;
-
 typedef struct trame
 {
     uint8_t preambule[7];
@@ -143,6 +144,8 @@ bool mac_est_egale(MAC *mac1, MAC *mac2);
 
 Erreur_fichier charger_reseau(const char *fichier, reseau_local *r);
 
+bool construire_arbre_selon_reseau(reseau_local* src, reseau_local* dst);
+
 bool est_un_arbre(reseau_local* r);
 
 size_t sommets_adjacent(const reseau_local* r, size_t sommet, size_t* adjacents);
@@ -152,3 +155,5 @@ void visite_composante_connexe(reseau_local const* g, size_t ind_equip, bool *vi
 bool reseau_est_connexe(reseau_local* r);
 
 bool cable_est_relie(cable* c, size_t sommet1, size_t sommet2);
+
+size_t obtenir_port_local(reseau_local* r, size_t sw_idx, size_t cable_idx);

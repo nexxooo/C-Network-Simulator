@@ -150,3 +150,11 @@ IPV4 str_to_ipv4(char *str)
             res.bytes[i] = (uint8_t)b[i];
     return res;
 }
+
+void afficher_bpdu(BPDU *bpdu)
+{
+    char mac_str[19];
+    mac_to_str(&bpdu->transmetteur_id, mac_str);
+    printf("BPDU [Racine ID: %zu | Coût: %zu | Transmetteur: %s]\n",
+           bpdu->racine_id, bpdu->cout, mac_str);
+}

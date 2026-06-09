@@ -1,69 +1,31 @@
 #include "../include/stp.h"
+#include "../include/affichage.h"
 
-bool bpdu_est_meilleure(BPDU *bpdu1, BPDU *bpdu2)
-{
-    if ( bpdu1->racine_id < bpdu2->racine_id )
-        return true;
-    else if ( bpdu1->racine_id > bpdu2->racine_id )
-        return false;
-    else if ( bpdu1->cout < bpdu2->cout )
-        return true;
-    else if ( bpdu1->cout > bpdu2->cout )
-        return false;
-    else
-        return mac_est_meilleure(&bpdu1->transmetteur_id, &bpdu2->transmetteur_id);
-    return false;
-}
+/* Adresse multicast "all bridges" pour les trames BPDU (01:80:C2:00:00:00) */
+const MAC MAC_ALL_BRIDGES = {{0x01, 0x80, 0xC2, 0x00, 0x00, 0x00}};
 
-bool initialiser_racine_pour_ttSwitchs(reseau_local *r)
+void stp_initialiser_ponts(reseau_local *r)
 {
     for ( size_t i = 0; i < r->nb_equipements; i++ )
     {
         if ( r->equipements[i].type_equ == SWITCH )
         {
             switch_ *sw = &r->equipements[i].sw;
+            /* Au démarrage, un pont se considère comme la racine */
             sw->racine = sw->mac;
             sw->cout_vers_racine = 0;
-        }
-    }
-    return true;
-}
 
-bool stp_init(reseau_local *r)
-{
-    printf("=============INIT STP============\n");
-
-    /* Chaque switch se considère initialement comme sa propre racine */
-    initialiser_racine_pour_ttSwitchs(r);
-
-    for ( size_t i = 0; i < r->nb_equipements; i++ )
-    {
-        if ( r->equipements[i].type_equ == SWITCH )
-        {
-            switch_ *sw = &r->equipements[i].sw;
-            printf("=============INIT SWITCH %zu============\n", i);
-
-            /* Tous les ports démarrent à l'état RACINE avant convergence */
+            /* Initialement tous les ports sont inactifs (bloqués) */
             for ( size_t j = 0; j < sw->nb_port; j++ )
-                sw->ports[j].etat = ETAT_PORT_RACINE;
-
-            /* Émettre UN seul BPDU par switch :
-               racine_id = i  (index du switch, et non j l'index du port)
-               cout       = 0  (coût nul vers soi-même)
-               transmetteur = mac du switch lui-même
-               transmettre_bpdu() se charge de contacter tous les voisins. */
-            BPDU bpdu = creer_bpdu_8021d(i, sw->cout_vers_racine, sw->mac);
-            transmettre_bpdu(r, i, &bpdu);
+            {
+                sw->ports[j].etat = ETAT_PORT_BLOQUE;
+                sw->ports[j].a_recu_bpdu = false;
+            }
         }
     }
-    
-    /* Résoudre l'état de tous les ports (RACINE, DESIGNE, BLOQUE) après convergence */
-    stp_resoudre_ports(r);
-    
-    return true;
 }
 
-BPDU creer_bpdu_8021d(size_t racine_id, size_t cout, MAC transmetteur_id)
+BPDU creer_bpdu_802_1d(size_t racine_id, size_t cout, MAC transmetteur_id)
 {
     BPDU bpdu;
     bpdu.racine_id = racine_id;
@@ -72,28 +34,51 @@ BPDU creer_bpdu_8021d(size_t racine_id, size_t cout, MAC transmetteur_id)
     return bpdu;
 }
 
-trame creer_trame_bpdu(MAC source, MAC destination, BPDU *bpdu)
+trame encapsuler_bpdu_dans_trame(MAC source, BPDU *bpdu)
 {
     trame t;
 
+    /* Préambule Ethernet : 7 octets à 0xAA */
     for ( size_t i = 0; i < 7; i++ )
         t.preambule[i] = 0xAA;
+    /* Start Frame Delimiter */
     t.SFD = 0xAB;
 
     t.source = source;
-    t.destination = destination;
+    /* Les trames BPDU sont adressées en multicast (all bridges) */
+    t.destination = MAC_ALL_BRIDGES;
 
+    /* Type Slow Protocols pour STP */
     t.type = 0x8809;
 
+    /* Encapsuler le BPDU dans le champ data de la trame */
     t.bpdu = *bpdu;
 
+    /* Frame Check Sequence (simplifié à 0) */
     t.FCS = 0;
 
     return t;
 }
 
-/* Renvoie l'index de l'équipement dont l'adresse MAC correspond à mac,
-   ou SIZE_MAX si introuvable. */
+BPDU extraire_bpdu_de_trame(trame *t)
+{
+    return t->bpdu;
+}
+
+bool bpdu_est_meilleur(BPDU *bpdu1, BPDU *bpdu2)
+{
+    if ( bpdu1->racine_id < bpdu2->racine_id )
+        return true;
+    if ( bpdu1->racine_id > bpdu2->racine_id )
+        return false;
+    if ( bpdu1->cout < bpdu2->cout )
+        return true;
+    if ( bpdu1->cout > bpdu2->cout )
+        return false;
+    return mac_est_meilleure(&bpdu1->transmetteur_id, &bpdu2->transmetteur_id);
+}
+
+
 static size_t get_index_par_mac(reseau_local *r, MAC *mac)
 {
     for ( size_t i = 0; i < r->nb_equipements; i++ )
@@ -107,14 +92,83 @@ static size_t get_index_par_mac(reseau_local *r, MAC *mac)
     return SIZE_MAX;
 }
 
-/* Transmet un BPDU depuis le switch id_switch vers tous ses voisins switches.
-   Pour chaque voisin :
-     - on calcule le coût réel (bpdu->cout + poids du câble)
-     - si ce BPDU est meilleur que l'état actuel du voisin, on met à jour
-       sa racine et son coût, puis on propage récursivement depuis lui.
-   La récursion s'arrête naturellement dès qu'aucun voisin n'est amélioré. */
-bool transmettre_bpdu(reseau_local *r, size_t id_switch, BPDU *bpdu)
+static size_t trouver_cable(reseau_local *r, size_t sommet1, size_t sommet2)
 {
+    for ( size_t i = 0; i < r->nb_cables; i++ )
+        if ( cable_est_relie(&r->cables[i], sommet1, sommet2) )
+            return i;
+    return SIZE_MAX;
+}
+
+bool stp_traiter_trame_recue(reseau_local *r, size_t id_switch_recepteur,
+                             size_t cable_idx, trame *trame_recue)
+{
+    switch_ *sw = &r->equipements[id_switch_recepteur].sw;
+
+    /* 1. Extraire le BPDU de la trame reçue */
+    BPDU bpdu_extrait = extraire_bpdu_de_trame(trame_recue);
+
+    /* 2. Calculer le coût réel : coût du BPDU + pondération du câble */
+    size_t ponderation = r->cables[cable_idx].ponderation;
+    BPDU bpdu_recu = creer_bpdu_802_1d(
+        bpdu_extrait.racine_id,
+        bpdu_extrait.cout + ponderation,
+        bpdu_extrait.transmetteur_id);
+
+    /* 3. Construire le BPDU représentant l'état actuel du récepteur */
+    size_t racine_actuelle_id = get_index_par_mac(r, &sw->racine);
+    BPDU bpdu_actuel = creer_bpdu_802_1d(
+        racine_actuelle_id,
+        sw->cout_vers_racine,
+        sw->mac);
+
+    /* 4. Sauvegarder le meilleur BPDU reçu sur ce port
+          (le pont sauvegarde pour chaque port le meilleur message) */
+    size_t port_local = obtenir_port_local(r, id_switch_recepteur, cable_idx);
+    if ( port_local < sw->nb_port )
+    {
+        if ( !sw->ports[port_local].a_recu_bpdu ||
+             bpdu_est_meilleur(&bpdu_recu, &sw->ports[port_local].meilleur_bpdu_recu) )
+        {
+            sw->ports[port_local].meilleur_bpdu_recu = bpdu_recu;
+            sw->ports[port_local].a_recu_bpdu = true;
+        }
+    }
+
+    /* 5. Mise à jour uniquement si le BPDU reçu est meilleur que l'état actuel */
+    if ( bpdu_est_meilleur(&bpdu_recu, &bpdu_actuel) )
+    {
+        /* Mettre à jour la racine connue et le coût vers la racine */
+        if ( r->equipements[bpdu_recu.racine_id].type_equ == SWITCH )
+            sw->racine = r->equipements[bpdu_recu.racine_id].sw.mac;
+        sw->cout_vers_racine = bpdu_recu.cout;
+
+        /* Le port racine est le port qui a reçu le meilleur message 802.1d */
+        if ( port_local < sw->nb_port )
+        {
+            sw->port_racine.numero_port = port_local;
+            sw->port_racine.etat = ETAT_PORT_RACINE;
+        }
+
+        return true; /* État mis à jour → propagation nécessaire */
+    }
+
+    return false; /* Pas de changement */
+}
+
+void stp_diffuser_trames(reseau_local *r, size_t id_switch)
+{
+    switch_ *sw = &r->equipements[id_switch].sw;
+
+    /* Créer le BPDU que ce switch transmet :
+       racine actuelle, coût vers la racine, MAC du transmetteur */
+    size_t racine_id = get_index_par_mac(r, &sw->racine);
+    BPDU bpdu = creer_bpdu_802_1d(racine_id, sw->cout_vers_racine, sw->mac);
+
+    /* Encapsuler le BPDU dans une trame Ethernet (destination multicast) */
+    trame trame_a_envoyer = encapsuler_bpdu_dans_trame(sw->mac, &bpdu);
+
+    /* Trouver tous les voisins et envoyer la trame */
     size_t adjacents[r->nb_equipements];
     size_t n_adj = sommets_adjacent(r, id_switch, adjacents);
 
@@ -122,64 +176,25 @@ bool transmettre_bpdu(reseau_local *r, size_t id_switch, BPDU *bpdu)
     {
         size_t voisin_id = adjacents[a];
 
-        /* On ne transmet qu'aux switches */
+        /* Seuls les ponts lisent les trames BPDU (adressées en multicast) */
         if ( r->equipements[voisin_id].type_equ != SWITCH )
             continue;
 
-        /* Retrouver le câble reliant id_switch et voisin_id pour la pondération */
-        size_t ponderation = 0;
-        size_t cable_idx = SIZE_MAX;
-        for ( size_t i = 0; i < r->nb_cables; i++ )
+        /* Retrouver le câble reliant les deux switches */
+        size_t cable_idx = trouver_cable(r, id_switch, voisin_id);
+        if ( cable_idx == SIZE_MAX )
+            continue;
+
+        /* Le voisin reçoit la trame et la traite */
+        if ( stp_traiter_trame_recue(r, voisin_id, cable_idx, &trame_a_envoyer) )
         {
-            if ( cable_est_relie(&r->cables[i], id_switch, voisin_id) )
-            {
-                ponderation = r->cables[i].ponderation;
-                cable_idx = i;
-                break;
-            }
-        }
-
-        switch_ *voisin = &r->equipements[voisin_id].sw;
-
-        /* BPDU tel que reçu par le voisin : même racine, coût augmenté du poids */
-        BPDU bpdu_recu = creer_bpdu_8021d(
-            bpdu->racine_id,
-            bpdu->cout + ponderation,
-            bpdu->transmetteur_id);
-
-        /* BPDU représentant l'état actuel du voisin */
-        size_t racine_actuelle_id = get_index_par_mac(r, &voisin->racine);
-        BPDU bpdu_actuel = creer_bpdu_8021d(
-            racine_actuelle_id,
-            voisin->cout_vers_racine,
-            voisin->mac);
-
-        /* Mise à jour uniquement si le BPDU reçu est meilleur */
-        if ( bpdu_est_meilleure(&bpdu_recu, &bpdu_actuel) )
-        {
-            /* Mettre à jour la racine connue et le coût du voisin */
-            if ( r->equipements[bpdu_recu.racine_id].type_equ == SWITCH )
-                voisin->racine = r->equipements[bpdu_recu.racine_id].sw.mac;
-            voisin->cout_vers_racine = bpdu_recu.cout;
-
-            /* Marquer le port racine du voisin en trouvant son numéro de port local */
-            size_t port_local = obtenir_port_local(r, voisin_id, cable_idx);
-            voisin->port_racine.numero_port = port_local;
-            voisin->port_racine.etat = ETAT_PORT_RACINE;
-
-            /* Propager depuis le voisin avec son propre MAC comme transmetteur */
-            BPDU bpdu_suivant = creer_bpdu_8021d(
-                bpdu_recu.racine_id,
-                bpdu_recu.cout,
-                voisin->mac);
-            transmettre_bpdu(r, voisin_id, &bpdu_suivant);
+            /* Si l'état du voisin a changé, il propage à son tour ses trames
+               (avec son propre MAC comme transmetteur) */
+            stp_diffuser_trames(r, voisin_id);
         }
     }
-    return true;
 }
-
-// renvoie l'index du switch racine dans le tableau des equipements de r
-size_t get_index_racine(reseau_local *r)
+size_t stp_obtenir_index_racine(reseau_local *r)
 {
     for ( size_t i = 0; i < r->nb_equipements; i++ )
     {
@@ -193,9 +208,115 @@ size_t get_index_racine(reseau_local *r)
     return SIZE_MAX;
 }
 
-size_t distance_vers_racine(reseau_local *r, equipement *equ)
+static void stp_determiner_ports_racines(reseau_local *r, size_t racine_idx)
 {
-    size_t idx_racine = get_index_racine(r);
+    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    {
+        if ( r->equipements[i].type_equ != SWITCH )
+            continue;
+        if ( i == racine_idx )
+            continue; /* La racine n'a pas de port racine */
+
+        switch_ *sw = &r->equipements[i].sw;
+        size_t root_port = sw->port_racine.numero_port;
+        if ( root_port < sw->nb_port )
+            sw->ports[root_port].etat = ETAT_PORT_RACINE;
+    }
+}
+
+static void stp_determiner_ports_designes(reseau_local *r, size_t racine_idx)
+{
+    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    {
+        if ( r->equipements[i].type_equ != SWITCH )
+            continue;
+
+        switch_ *sw = &r->equipements[i].sw;
+
+        /* Si c'est le commutateur racine, tous ses ports sont DÉSIGNÉS */
+        if ( i == racine_idx )
+        {
+            for ( size_t p = 0; p < sw->nb_port; p++ )
+                sw->ports[p].etat = ETAT_PORT_DESIGNE;
+            continue;
+        }
+
+        /* Pour les autres switches, vérifier chaque port non-racine */
+        size_t root_port_local = sw->port_racine.numero_port;
+        size_t port_loc = 0;
+
+        for ( size_t c = 0; c < r->nb_cables; c++ )
+        {
+            if ( r->cables[c].sommet1 != i && r->cables[c].sommet2 != i )
+                continue;
+
+            /* Le port racine est déjà traité à l'étape 5b */
+            if ( port_loc == root_port_local )
+            {
+                port_loc++;
+                continue;
+            }
+
+            size_t voisin_idx = (r->cables[c].sommet1 == i)
+                                    ? r->cables[c].sommet2
+                                    : r->cables[c].sommet1;
+
+            /* Port vers une station → toujours DÉSIGNÉ */
+            if ( r->equipements[voisin_idx].type_equ == STATION )
+            {
+                sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
+            }
+            /* Port vers un switch → comparer les coûts vers la racine
+               Un port est désigné si le message qu'il transmet est meilleur
+               que le meilleur message qu'il reçoit */
+            else if ( r->equipements[voisin_idx].type_equ == SWITCH )
+            {
+                switch_ *v_sw = &r->equipements[voisin_idx].sw;
+
+                if ( sw->cout_vers_racine < v_sw->cout_vers_racine )
+                {
+                    sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
+                }
+                else if ( sw->cout_vers_racine == v_sw->cout_vers_racine )
+                {
+                    /* Si même coût, le pont avec le meilleur MAC est désigné */
+                    if ( mac_est_meilleure(&sw->mac, &v_sw->mac) )
+                        sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
+                }
+            }
+            port_loc++;
+        }
+    }
+}
+
+void stp_resoudre_etats_ports(reseau_local *r)
+{
+    size_t racine_idx = stp_obtenir_index_racine(r);
+    if ( racine_idx == SIZE_MAX )
+        return;
+
+    /* D'abord, tous les ports sont BLOQUÉS par défaut (ports inactifs) */
+    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    {
+        if ( r->equipements[i].type_equ != SWITCH )
+            continue;
+        switch_ *sw = &r->equipements[i].sw;
+        for ( size_t p = 0; p < sw->nb_port; p++ )
+            sw->ports[p].etat = ETAT_PORT_BLOQUE;
+    }
+
+    /* Étape 5b : Déterminer les ports racines (un par pont, sauf la racine) */
+    stp_determiner_ports_racines(r, racine_idx);
+
+    /* Étape 5c : Déterminer les ports désignés */
+    stp_determiner_ports_designes(r, racine_idx);
+
+    /* Les ports restants sont bloqués (déjà initialisés à BLOQUÉ ci-dessus) */
+}
+
+size_t stp_distance_vers_racine(reseau_local *r, equipement *equ)
+{
+    size_t idx_racine = stp_obtenir_index_racine(r);
     if ( idx_racine == SIZE_MAX )
         return SIZE_MAX;
 
@@ -269,87 +390,28 @@ size_t distance_vers_racine(reseau_local *r, equipement *equ)
     return dist[idx_racine];
 }
 
-size_t obtenir_port_local(reseau_local *r, size_t sw_idx, size_t cable_idx)
+bool stp_init(reseau_local *r)
 {
-    size_t port_loc = 0;
-    for (size_t i = 0; i < r->nb_cables; i++)
-    {
-        if (r->cables[i].sommet1 == sw_idx || r->cables[i].sommet2 == sw_idx)
-        {
-            if (i == cable_idx)
-                return port_loc;
-            port_loc++;
-        }
-    }
-    return SIZE_MAX;
+    printf("============= PROTOCOLE STP 802.1d =============\n");
+
+    /* Étape 1 : Initialisation — chaque pont se considère comme la racine
+       et transmet un message 802.1d avec un coût de 0 sur tous ses ports */
+    printf("[Étape 1] Initialisation des ponts\n");
+    stp_initialiser_ponts(r);
+
+    /* Étapes 2-4 : Chaque switch crée un BPDU, l'encapsule dans une trame,
+       et la diffuse vers ses voisins. La convergence se fait par propagation
+       récursive jusqu'à ce qu'aucun voisin ne soit amélioré. */
+    printf("[Étapes 2-4] Diffusion et propagation des trames BPDU\n");
+    for ( size_t i = 0; i < r->nb_equipements; i++ )
+        if ( r->equipements[i].type_equ == SWITCH )
+            stp_diffuser_trames(r, i);
+
+    /* Étape 5 : Déterminer l'état de tous les ports (racine, désigné, bloqué)
+       Les ports racines et désignés deviennent actifs. */
+    printf("[Étape 5] Résolution de l'état des ports\n");
+    stp_resoudre_etats_ports(r);
+
+    printf("============= STP CONVERGÉ =============\n");
+    return true;
 }
-
-void stp_resoudre_ports(reseau_local *r)
-{
-    size_t racine_idx = get_index_racine(r);
-    if (racine_idx == SIZE_MAX) return;
-
-    for (size_t i = 0; i < r->nb_equipements; i++)
-    {
-        if (r->equipements[i].type_equ != SWITCH)
-            continue;
-
-        switch_ *sw = &r->equipements[i].sw;
-
-        // 1. Initialiser tous les ports du switch à BLOQUÉ par défaut
-        for (size_t p = 0; p < sw->nb_port; p++) {
-            sw->ports[p].etat = ETAT_PORT_BLOQUE;
-        }
-
-        // Si c'est le commutateur racine, tous ses ports connectés deviennent DÉSIGNÉS
-        if (i == racine_idx) {
-            for (size_t p = 0; p < sw->nb_port; p++) {
-                sw->ports[p].etat = ETAT_PORT_DESIGNE;
-            }
-            continue;
-        }
-
-        // 2. Activer son Port Racine (Root Port)
-        size_t root_port_local = sw->port_racine.numero_port;
-        if (root_port_local < sw->nb_port) {
-            sw->ports[root_port_local].etat = ETAT_PORT_RACINE;
-        }
-
-        // 3. Déterminer les ports désignés pour les autres liaisons
-        size_t port_loc = 0;
-        for (size_t c = 0; c < r->nb_cables; c++)
-        {
-            if (r->cables[c].sommet1 == i || r->cables[c].sommet2 == i)
-            {
-                // On passe le port racine local (déjà configuré)
-                if (port_loc == root_port_local) {
-                    port_loc++;
-                    continue;
-                }
-
-                size_t voisin_idx = (r->cables[c].sommet1 == i) ? r->cables[c].sommet2 : r->cables[c].sommet1;
-
-                // Si le voisin est une station, le port est DÉSIGNÉ
-                if (r->equipements[voisin_idx].type_equ == STATION) {
-                    sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
-                }
-                // Si le voisin est un switch, on compare les coûts vers la racine
-                else if (r->equipements[voisin_idx].type_equ == SWITCH) {
-                    switch_ *v_sw = &r->equipements[voisin_idx].sw;
-
-                    if (sw->cout_vers_racine < v_sw->cout_vers_racine) {
-                        sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
-                    }
-                    else if (sw->cout_vers_racine == v_sw->cout_vers_racine) {
-                        // Si même coût, comparaison par MAC address
-                        if (mac_est_meilleure(&sw->mac, &v_sw->mac)) {
-                            sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
-                        }
-                    }
-                }
-                port_loc++;
-            }
-        }
-    }
-}
-
