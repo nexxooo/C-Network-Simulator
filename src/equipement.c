@@ -131,7 +131,7 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
 
         else if ( ligne[0] == '2' ) // switch
         {
-            switch_ sw;
+            switch_ sw = {0};
             char *token = strtok(ligne, ";");
             token = strtok(NULL, ";");
 
@@ -143,6 +143,7 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
             token = strtok(NULL, ";");
             sw.priorite = atoi(token);
 
+            sw.taille_max = TAILLE_REALOC;
             init_switch(&sw, sw.nb_port);
 
             equipement equ = {.type_equ = SWITCH, .sw = sw};
