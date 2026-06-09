@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 
     reseau_local r;
     init_reseau(&r);
-    if ( charger_reseau("configs/config3.txt", &r) != ERR_OK )
+    if ( charger_reseau("configs/mylan.txt", &r) != ERR_OK )
         printf("Erreur dans le chargement\n");
     afficher_reseau(&r);
     afficher_cables(&r);

@@ -57,3 +57,21 @@ bool stp_init(reseau_local *r)
     }
     return true;
 }
+
+BPDU creer_bpdu_8021d(size_t racine_id, size_t cout, MAC transmetteur_id)
+{
+    BPDU bpdu;
+    bpdu.racine_id = racine_id;
+    bpdu.cout = cout;
+    bpdu.transmetteur_id = transmetteur_id;
+    return bpdu;
+}
+
+bool transmettre_bpdu(reseau_local* r, size_t id_switch, BPDU* bpdu)
+{
+    // TODO: implementer
+    (void)r;
+    (void)id_switch;
+    (void)bpdu;
+    return true;
+}

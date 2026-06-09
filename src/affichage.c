@@ -21,6 +21,30 @@ void afficher_reseau(reseau_local *reseau)
     printf("_____________________________________________\n");
     printf("nombre d'équipement: %zu\n", reseau->nb_equipements);
     printf("nombre de liaison: %zu\n", reseau->nb_cables);
+
+    for ( size_t i = 0; i < reseau->nb_equipements; i++ )
+    {
+        printf("equipement %zu: ", i);
+        if ( reseau->equipements[i].type_equ == SWITCH )
+        {
+            printf("SWITCH\n");
+            switch_ *sw = &reseau->equipements[i].sw;
+            printf("nombre de ports: %zu\n", sw->nb_port);
+            printf("adresse mac: ");
+            afficher_mac(&sw->mac);
+            printf("table de commutation:\n");
+            afficher_table(sw);
+        }
+        else
+        {
+            printf("HOTE\n");
+            station* st = &reseau->equipements[i].st;
+            printf("adresse mac: ");
+            afficher_mac(&st->mac);
+            printf("adresse ipv4: ");
+            afficher_ipv4(&st->ipv4);
+        }
+    }
 }
 
 void afficher_cables(const reseau_local *r)
@@ -38,12 +62,15 @@ void afficher_table(switch_ *sw)
     }
     else
     {
-        for ( int i = 0; i < sw->nb_port; i++ )
-            printf("|          port: %i           ", i);
-        MAC *tab[sw->taille_tab];
-        for ( int i = 0; i < sw->taille_tab; i++ )
+        for ( size_t i = 0; i < sw->nb_port; i++ )
+            printf("|          port: %zu           ", i);
+        printf("\n");
+        MAC *tab[sw->nb_port];
+        for ( size_t i = 0; i < sw->nb_port; i++ )
+            tab[i] = NULL;
+        for ( size_t i = 0; i < sw->taille_tab; i++ )
             tab[sw->tab[i].interface_port] = &sw->tab[i].mac;
-        for ( int i = 0; i < sw->nb_port; i++ )
+        for ( size_t i = 0; i < sw->nb_port; i++ )
             if ( tab[i] == NULL )
                 printf("| NULL      ");
             else
