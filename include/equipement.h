@@ -39,7 +39,6 @@ typedef enum etat_port
     ETAT_PORT_RACINE
 } etat_port;
 
-
 typedef struct port
 {
     size_t numero_port;
@@ -50,7 +49,7 @@ typedef struct switch_
 {
     MAC mac;
     size_t nb_port;
-    port* ports;
+    port *ports;
     size_t priorite;
     table_de_commutation *tab;
     size_t taille_tab;
@@ -99,18 +98,6 @@ typedef struct reseau_local
 
 } reseau_local;
 
-typedef struct trame
-{
-    MAC source;
-    MAC destination;
-    uint8_t SFD;
-    uint16_t type;
-    uint32_t FCS;
-    uint8_t préambule[7];
-    uint8_t data[1500];
-
-} trame;
-
 typedef enum Erreur_fichier
 {
     ERR_FICHIER_NON_TROUVE,
@@ -119,6 +106,7 @@ typedef enum Erreur_fichier
     ERR_OK
 } Erreur_fichier;
 
+/* Protocole STP - doit être déclaré avant trame */
 typedef struct BPDU
 {
     size_t racine_id;
@@ -127,13 +115,30 @@ typedef struct BPDU
 
 } BPDU;
 
+typedef struct trame
+{
+    uint8_t preambule[7];
+    uint8_t SFD;
+    MAC destination;
+    MAC source;
+    uint16_t type;
+    uint32_t FCS;
+
+    union
+    {
+        uint8_t data[1500];
+        BPDU bpdu;
+    };
+
+} trame;
+
 bool init_reseau(reseau_local *r);
 bool free_reseau(reseau_local *r);
 
 bool ajouter_equipement(equipement e, reseau_local *r);
 bool ajouter_cable(cable c, reseau_local *r);
 
-bool mac_est_meilleure(MAC* mac1, MAC* mac2);
-bool mac_est_egale(MAC* mac1, MAC* mac2);
+bool mac_est_meilleure(MAC *mac1, MAC *mac2);
+bool mac_est_egale(MAC *mac1, MAC *mac2);
 
 Erreur_fichier charger_reseau(const char *fichier, reseau_local *r);

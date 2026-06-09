@@ -114,7 +114,7 @@ void afficher_tram_brute(trame *tr)
 {
     printf("TRAM BRUTE: \n");
     for ( int i = 0; i < 7; i++ )
-        printf("%02X ", tr->préambule[i]);
+        printf("%02X ", tr->preambule[i]);
     printf("%02X \n", tr->SFD);
     for ( int i = 0; i < 6; i++ )
         printf("%02X ", tr->destination.bytes[i]);

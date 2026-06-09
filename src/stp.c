@@ -2,15 +2,15 @@
 
 bool bpdu_est_meilleure(BPDU* bpdu1, BPDU* bpdu2)
 {
-    if ( bpdu1->racine_id < bpdu2->racine_id )
+    if (bpdu1->racine_id < bpdu2->racine_id)
         return true;
-    else if ( bpdu1->racine_id > bpdu2->racine_id )
+    else if (bpdu1->racine_id > bpdu2->racine_id)
         return false;
     else
     {
-        if ( bpdu1->cout < bpdu2->cout )
+        if (bpdu1->cout < bpdu2->cout)
             return true;
-        else if ( bpdu1->cout > bpdu2->cout )
+        else if (bpdu1->cout > bpdu2->cout)
             return false;
         else
         {
@@ -22,9 +22,9 @@ bool bpdu_est_meilleure(BPDU* bpdu1, BPDU* bpdu2)
 
 bool initialiser_racine_pour_ttSwitchs(reseau_local* r)
 {
-    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    for (size_t i = 0; i < r->nb_equipements; i++)
     {
-        if ( r->equipements[i].type_equ == SWITCH )
+        if (r->equipements[i].type_equ == SWITCH)
         {
             switch_* sw = &r->equipements[i].sw;
             sw->racine = sw->mac;
@@ -38,13 +38,13 @@ bool stp_init(reseau_local *r)
 {
     printf("=============INIT STP============\n");
 
-    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    for (size_t i = 0; i < r->nb_equipements; i++)
     {
-        if ( r->equipements[i].type_equ == SWITCH )
+        if (r->equipements[i].type_equ == SWITCH)
         {
             switch_* sw = &r->equipements[i].sw;
             printf("=============INIT SWITCH %zu============\n", i);
-            for ( size_t j = 0; j < sw->nb_port; j++ )
+            for (size_t j = 0; j < sw->nb_port; j++)
             {
                 //tous les ports se considerent comme racine
                 port* p = &sw->ports[j];
@@ -67,6 +67,26 @@ BPDU creer_bpdu_8021d(size_t racine_id, size_t cout, MAC transmetteur_id)
     return bpdu;
 }
 
+trame creer_trame_bpdu(MAC source, MAC destination, BPDU* bpdu)
+{
+    trame t;
+
+    for (size_t i = 0; i < 7; i++)
+        t.preambule[i] = 0xAA;
+    t.SFD = 0xAB;
+
+    t.source = source;
+    t.destination = destination;
+
+    t.type = 0x8809;
+
+    t.bpdu = *bpdu;
+
+    t.FCS = 0;
+
+    return t;
+}
+
 bool transmettre_bpdu(reseau_local* r, size_t id_switch, BPDU* bpdu)
 {
     // TODO: implementer
@@ -79,12 +99,12 @@ bool transmettre_bpdu(reseau_local* r, size_t id_switch, BPDU* bpdu)
 //renvoie l'index du switch racine dans le tableau des equipements de r 
 size_t get_index_racine(reseau_local* r)
 {
-    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    for (size_t i = 0; i < r->nb_equipements; i++)
     {
-        if ( r->equipements[i].type_equ == SWITCH )
+        if (r->equipements[i].type_equ == SWITCH)
         {
             switch_* sw = &r->equipements[i].sw;
-            if ( mac_est_egale(&sw->racine, &sw->mac) )
+            if (mac_est_egale(&sw->racine, &sw->mac))
                 return i;
         }
     }
@@ -93,6 +113,6 @@ size_t get_index_racine(reseau_local* r)
 
 size_t distance_vers_racine(reseau_local* r, equipement* equ)
 {
-    
+    // TODO: implementer
 }
 
