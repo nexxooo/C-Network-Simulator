@@ -11,14 +11,26 @@ int main(int argc, char *argv[])
 
     reseau_local r;
     init_reseau(&r);
-    if ( charger_reseau("configs/config1.txt", &r) != ERR_OK )
+    if ( charger_reseau("configs/config2.txt", &r) != ERR_OK )
         printf("Erreur dans le chargement\n");
 
     printf("Le réseau est il un arbre ? %b\n", est_un_arbre(&r));
     afficher_reseau(&r);
     afficher_cables(&r);
 
+    printf("\n=== États des ports AVANT STP ===\n");
+    afficher_etat_port_reseau(&r);
+
     stp_init(&r);
+
+    printf("\n=== États des ports APRÈS STP ===\n");
+    afficher_etat_port_reseau(&r);
+
+    printf("\n=== Affichage individuel (Switch 0) ===\n");
+    if ( r.nb_equipements > 0 && r.equipements[0].type_equ == SWITCH )
+    {
+        afficher_etat_port_switch(&r.equipements[0].sw);
+    }
 
     afficher_reseau(&r);
     printf("Le réseau (après STP) est il un arbre ? %b\n", est_un_arbre(&r));

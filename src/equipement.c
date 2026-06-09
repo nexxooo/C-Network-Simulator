@@ -331,8 +331,8 @@ bool construire_arbre_selon_reseau(reseau_local *src, reseau_local *dst)
         if ( port_loc2 < sw2->nb_port )
             etat2 = sw2->ports[port_loc2].etat;
 
-        /* Le lien est actif si au moins un côté n'est pas bloqué */
-        if ( etat1 != ETAT_PORT_BLOQUE || etat2 != ETAT_PORT_BLOQUE )
+        /* Le lien est actif si les deux côtés ne sont pas bloqués */
+        if ( etat1 != ETAT_PORT_BLOQUE && etat2 != ETAT_PORT_BLOQUE )
             ajouter_cable(src->cables[c], dst);
     }
 

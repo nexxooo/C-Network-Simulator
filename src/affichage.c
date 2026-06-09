@@ -71,7 +71,7 @@ void afficher_reseau(reseau_local *reseau)
 
 void afficher_cables(const reseau_local *r)
 {
-    for ( int i = 0; i < r->nb_cables; i++ )
+    for ( size_t i = 0; i < r->nb_cables; i++ )
         printf("%zu --> %zu\n", r->cables[i].sommet1,
                r->cables[i].sommet2);
 }
@@ -157,4 +157,60 @@ void afficher_bpdu(BPDU *bpdu)
     mac_to_str(&bpdu->transmetteur_id, mac_str);
     printf("BPDU [Racine ID: %zu | Coût: %zu | Transmetteur: %s]\n",
            bpdu->racine_id, bpdu->cout, mac_str);
+}
+
+const char *etat_port_to_str(etat_port etat)
+{
+    switch ( etat )
+    {
+        case ETAT_PORT_BLOQUE:
+            return "BLOQUÉ";
+        case ETAT_PORT_INCONNU:
+            return "INCONNU";
+        case ETAT_PORT_DESIGNE:
+            return "DÉSIGNÉ";
+        case ETAT_PORT_RACINE:
+            return "RACINE";
+        default:
+            return "INCONNU";
+    }
+}
+
+void afficher_etat_port_switch(switch_ *sw)
+{
+    char mac_str[19];
+    mac_to_str(&sw->mac, mac_str);
+    printf("Switch %s (Priorité: %zu) - État des ports :\n", mac_str, sw->priorite);
+    for ( size_t i = 0; i < sw->nb_port; i++ )
+    {
+        port *p = &sw->ports[i];
+        printf("  Port %zu : %s", p->numero_port, etat_port_to_str(p->etat));
+        if ( p->a_recu_bpdu )
+        {
+            char trans_mac[19];
+            mac_to_str(&p->meilleur_bpdu_recu.transmetteur_id, trans_mac);
+            printf(" | Meilleur BPDU reçu -> [Racine ID: %zu, Coût: %zu, Transmetteur: %s]",
+                   p->meilleur_bpdu_recu.racine_id,
+                   p->meilleur_bpdu_recu.cout,
+                   trans_mac);
+        }
+        else
+        {
+            printf(" | Aucun BPDU reçu");
+        }
+        printf("\n");
+    }
+}
+
+void afficher_etat_port_reseau(reseau_local *rs)
+{
+    printf("=== ÉTAT DES PORTS DU RÉSEAU ===\n");
+    for ( size_t i = 0; i < rs->nb_equipements; i++ )
+    {
+        if ( rs->equipements[i].type_equ == SWITCH )
+        {
+            afficher_etat_port_switch(&rs->equipements[i].sw);
+            printf("--------------------------------------------------\n");
+        }
+    }
 }

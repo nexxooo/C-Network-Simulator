@@ -18,3 +18,5 @@ void ip_to_str(IPV4 *ip,char *buffer);
 void afficher_table(switch_ *sw);
 void afficher_cables(const reseau_local *r);
 void afficher_bpdu(BPDU *bpdu);
+void afficher_etat_port_switch(switch_ *sw);
+void afficher_etat_port_reseau(reseau_local *rs);
