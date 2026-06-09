@@ -134,5 +134,6 @@ bool ajouter_equipement(equipement e, reseau_local *r);
 bool ajouter_cable(cable c, reseau_local *r);
 
 bool mac_est_meilleure(MAC* mac1, MAC* mac2);
+bool mac_est_egale(MAC* mac1, MAC* mac2);
 
 Erreur_fichier charger_reseau(const char *fichier, reseau_local *r);

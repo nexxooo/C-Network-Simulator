@@ -13,3 +13,4 @@ bool transmettre_bpdu(reseau_local* r, size_t id_switch, BPDU* bpdu);
 
 //probablement utiliser lalgorithme de djisktra ou une saloperie du genre
 size_t distance_vers_racine(reseau_local* r, equipement* equ);
+size_t get_index_racine(reseau_local* r);

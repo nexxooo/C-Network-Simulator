@@ -75,3 +75,24 @@ bool transmettre_bpdu(reseau_local* r, size_t id_switch, BPDU* bpdu)
     (void)bpdu;
     return true;
 }
+
+//renvoie l'index du switch racine dans le tableau des equipements de r 
+size_t get_index_racine(reseau_local* r)
+{
+    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    {
+        if ( r->equipements[i].type_equ == SWITCH )
+        {
+            switch_* sw = &r->equipements[i].sw;
+            if ( mac_est_egale(&sw->racine, &sw->mac) )
+                return i;
+        }
+    }
+    return SIZE_MAX;
+}
+
+size_t distance_vers_racine(reseau_local* r, equipement* equ)
+{
+    
+}
+

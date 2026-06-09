@@ -185,3 +185,14 @@ bool mac_est_meilleure(MAC* mac1, MAC* mac2)
     }
     return false;
 }
+
+
+bool mac_est_egale(MAC* mac1, MAC* mac2)
+{
+    for ( size_t i = 0; i < 6; i++ )
+    {
+        if ( mac1->bytes[i] != mac2->bytes[i] )
+            return false;
+    }
+    return true;
+}
