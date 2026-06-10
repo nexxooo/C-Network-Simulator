@@ -57,12 +57,12 @@ int main(int argc, char *argv[])
         // 1. Première trame: Station 1 -> Station 2 (Flooding car destination inconnue)
         const char *msg1 = "Hello Station 2!";
         trame t1 = creer_trame_ethernet(mac_src, mac_dst, 0x0800, (const uint8_t *)msg1, strlen(msg1) + 1);
-        envoyer_trame(&r, idx_station_src, mac_dst, &t1, true);
+        envoyer_trame(&r, idx_station_src, &t1, true);
 
         // 2. Deuxième trame: Station 2 -> Station 1 (Unicast car source maintenant apprise par les switchs)
         const char *msg2 = "Hello back, Station 1!";
         trame t2 = creer_trame_ethernet(mac_dst, mac_src, 0x0800, (const uint8_t *)msg2, strlen(msg2) + 1);
-        envoyer_trame(&r, idx_station_dst, mac_src, &t2, true);
+        envoyer_trame(&r, idx_station_dst, &t2, true);
 
         // 3. Afficher les tables de commutation après transmission
         printf("\n=== TABLES DE COMMUTATION APRÈS TRANSMISSIONS ===\n");

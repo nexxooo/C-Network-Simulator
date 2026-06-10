@@ -48,6 +48,7 @@ bool free_reseau(reseau_local *r)
 
 bool init_switch(switch_ *sw, size_t nb_port)
 {
+    sw->nb_port = nb_port;
     sw->tab = malloc(sizeof(table_de_commutation) * sw->taille_max);
     if ( sw->tab == NULL )
         return false;
@@ -601,7 +602,7 @@ static void propager_trame_recue(reseau_local *r, size_t eq_idx, size_t cable_id
     }
 }
 
-void envoyer_trame(reseau_local *r, size_t eq_source_idx, MAC destination_mac, trame *tr, bool verbose)
+void envoyer_trame(reseau_local *r, size_t eq_source_idx, trame *tr, bool verbose)
 {
     if ( eq_source_idx >= r->nb_equipements )
     {
