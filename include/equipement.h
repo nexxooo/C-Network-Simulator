@@ -157,3 +157,9 @@ bool reseau_est_connexe(reseau_local* r);
 bool cable_est_relie(cable* c, size_t sommet1, size_t sommet2);
 
 size_t obtenir_port_local(reseau_local* r, size_t sw_idx, size_t cable_idx);
+
+void switch_apprendre_mac(switch_ *sw, MAC source_mac, size_t port_entree);
+size_t switch_trouver_port(switch_ *sw, MAC dest_mac);
+bool obtenir_voisin_par_port(const reseau_local *r, size_t sw_idx, size_t port_num, size_t *voisin_idx, size_t *cable_idx);
+trame creer_trame_ethernet(MAC source, MAC destination, uint16_t type, const uint8_t *data, size_t data_len);
+void envoyer_trame(reseau_local *r, size_t eq_source_idx, MAC destination_mac, trame *tr, bool verbose);

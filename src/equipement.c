@@ -28,6 +28,16 @@ bool free_reseau(reseau_local *r)
     r->nb_cables = 0;
     free(r->cables);
     r->cables = NULL;
+
+    for ( size_t i = 0; i < r->nb_equipements; i++ )
+    {
+        if ( r->equipements[i].type_equ == SWITCH )
+        {
+            free(r->equipements[i].sw.ports);
+            free(r->equipements[i].sw.tab);
+        }
+    }
+
     r->equipement_capacite = 0;
     r->nb_equipements = 0;
     free(r->equipements);
@@ -281,7 +291,18 @@ bool construire_arbre_selon_reseau(reseau_local *src, reseau_local *dst)
         equipement e = src->equipements[i];
         if ( e.type_equ == SWITCH )
         {
-            equipement equ = {.type_equ = SWITCH, .sw = e.sw};
+            switch_ sw_copy = e.sw;
+            sw_copy.ports = malloc(sizeof(port) * e.sw.nb_port);
+            if ( sw_copy.ports )
+            {
+                memcpy(sw_copy.ports, e.sw.ports, sizeof(port) * e.sw.nb_port);
+            }
+            sw_copy.tab = malloc(sizeof(table_de_commutation) * e.sw.taille_max);
+            if ( sw_copy.tab )
+            {
+                memcpy(sw_copy.tab, e.sw.tab, sizeof(table_de_commutation) * e.sw.taille_tab);
+            }
+            equipement equ = {.type_equ = SWITCH, .sw = sw_copy};
             ajouter_equipement(equ, dst);
         }
         else
@@ -331,10 +352,305 @@ bool construire_arbre_selon_reseau(reseau_local *src, reseau_local *dst)
         if ( port_loc2 < sw2->nb_port )
             etat2 = sw2->ports[port_loc2].etat;
 
-        /* Le lien est actif si les deux côtés ne sont pas bloqués */
+    /* Le lien est actif si les deux côtés ne sont pas bloqués */
         if ( etat1 != ETAT_PORT_BLOQUE && etat2 != ETAT_PORT_BLOQUE )
             ajouter_cable(src->cables[c], dst);
     }
 
     return true;
 }
+
+void switch_apprendre_mac(switch_ *sw, MAC source_mac, size_t port_entree)
+{
+    // 1. Vérifier si l'adresse MAC est déjà présente
+    for ( size_t i = 0; i < sw->taille_tab; i++ )
+    {
+        if ( mac_est_egale(&sw->tab[i].mac, &source_mac) )
+        {
+            sw->tab[i].interface_port = port_entree;
+            return;
+        }
+    }
+
+    // 2. Agrandir la table si elle est pleine
+    if ( sw->taille_tab >= sw->taille_max )
+    {
+        size_t nouvelle_taille = sw->taille_max + 24;
+        table_de_commutation *verif = realloc(sw->tab, sizeof(table_de_commutation) * nouvelle_taille);
+        if ( verif == NULL )
+            return;
+        sw->tab = verif;
+        sw->taille_max = nouvelle_taille;
+    }
+
+    // 3. Ajouter l'association
+    sw->tab[sw->taille_tab].mac = source_mac;
+    sw->tab[sw->taille_tab].interface_port = port_entree;
+    sw->taille_tab++;
+}
+
+size_t switch_trouver_port(switch_ *sw, MAC dest_mac)
+{
+    for ( size_t i = 0; i < sw->taille_tab; i++ )
+    {
+        if ( mac_est_egale(&sw->tab[i].mac, &dest_mac) )
+        {
+            return sw->tab[i].interface_port;
+        }
+    }
+    return SIZE_MAX;
+}
+
+bool obtenir_voisin_par_port(const reseau_local *r, size_t sw_idx, size_t port_num, size_t *voisin_idx, size_t *cable_idx)
+{
+    size_t port_loc = 0;
+    for ( size_t i = 0; i < r->nb_cables; i++ )
+    {
+        if ( r->cables[i].sommet1 == sw_idx || r->cables[i].sommet2 == sw_idx )
+        {
+            if ( port_loc == port_num )
+            {
+                if ( cable_idx ) *cable_idx = i;
+                if ( voisin_idx )
+                {
+                    *voisin_idx = (r->cables[i].sommet1 == sw_idx) ? r->cables[i].sommet2 : r->cables[i].sommet1;
+                }
+                return true;
+            }
+            port_loc++;
+        }
+    }
+    return false;
+}
+
+trame creer_trame_ethernet(MAC source, MAC destination, uint16_t type, const uint8_t *data, size_t data_len)
+{
+    trame t = {0};
+    for ( int i = 0; i < 7; i++ )
+        t.preambule[i] = 0xAA;
+    t.SFD = 0xAB;
+    t.source = source;
+    t.destination = destination;
+    t.type = type;
+    if ( data && data_len > 0 )
+    {
+        size_t copy_len = data_len > 1500 ? 1500 : data_len;
+        memcpy(t.data, data, copy_len);
+    }
+    t.FCS = 0;
+    return t;
+}
+
+static void propager_trame_recue(reseau_local *r, size_t eq_idx, size_t cable_idx_entree, trame *tr, bool *visite, bool verbose)
+{
+    if ( eq_idx >= r->nb_equipements || visite[eq_idx] )
+        return;
+    visite[eq_idx] = true;
+
+    equipement *eq = &r->equipements[eq_idx];
+
+    if ( eq->type_equ == STATION )
+    {
+        station *st = &eq->st;
+        char mac_src_str[19], mac_dst_str[19], mac_st_str[19];
+        mac_to_str(&tr->source, mac_src_str);
+        mac_to_str(&tr->destination, mac_dst_str);
+        mac_to_str(&st->mac, mac_st_str);
+
+        if ( verbose )
+        {
+            printf("[Station %s] Reçoit une trame de %s destinée à %s\n",
+                   mac_st_str, mac_src_str, mac_dst_str);
+        }
+
+        bool est_broadcast = true;
+        for ( int i = 0; i < 6; i++ )
+        {
+            if ( tr->destination.bytes[i] != 0xFF )
+            {
+                est_broadcast = false;
+                break;
+            }
+        }
+
+        if ( mac_est_egale(&st->mac, &tr->destination) )
+        {
+            printf("[Station %s] SUCCESS : Trame acceptée ! Contenu : %s\n",
+                   mac_st_str, (char *)tr->data);
+        }
+        else if ( est_broadcast )
+        {
+            printf("[Station %s] Broadcast reçu ! Contenu : %s\n",
+                   mac_st_str, (char *)tr->data);
+        }
+        else
+        {
+            if ( verbose )
+            {
+                printf("[Station %s] Trame rejetée (MAC non correspondante)\n", mac_st_str);
+            }
+        }
+        return;
+    }
+
+    if ( eq->type_equ == SWITCH )
+    {
+        switch_ *sw = &eq->sw;
+        char mac_sw_str[19], mac_src_str[19], mac_dst_str[19];
+        mac_to_str(&sw->mac, mac_sw_str);
+        mac_to_str(&tr->source, mac_src_str);
+        mac_to_str(&tr->destination, mac_dst_str);
+
+        size_t port_entree = obtenir_port_local(r, eq_idx, cable_idx_entree);
+        if ( port_entree >= sw->nb_port )
+        {
+            if ( verbose )
+                printf("[Switch %s] Erreur : Port local introuvable pour le câble %zu\n", mac_sw_str, cable_idx_entree);
+            return;
+        }
+
+        if ( sw->ports[port_entree].etat == ETAT_PORT_BLOQUE )
+        {
+            if ( verbose )
+                printf("[Switch %s] Trame reçue sur le Port %zu qui est BLOQUÉ par STP. Trame rejetée.\n", mac_sw_str, port_entree);
+            return;
+        }
+
+        if ( verbose )
+        {
+            printf("[Switch %s] Trame reçue sur le Port %zu (Source: %s, Dest: %s)\n",
+                   mac_sw_str, port_entree, mac_src_str, mac_dst_str);
+        }
+
+        switch_apprendre_mac(sw, tr->source, port_entree);
+        if ( verbose )
+        {
+            printf("[Switch %s] Apprentissage : MAC %s associée au Port %zu\n",
+                   mac_sw_str, mac_src_str, port_entree);
+        }
+
+        size_t port_sortie = switch_trouver_port(sw, tr->destination);
+
+        if ( port_sortie != SIZE_MAX )
+        {
+            if ( port_sortie == port_entree )
+            {
+                if ( verbose )
+                    printf("[Switch %s] Filtrage : la destination est sur le même port que l'entrée (%zu). Trame non propagée.\n", mac_sw_str, port_entree);
+                return;
+            }
+
+            if ( sw->ports[port_sortie].etat == ETAT_PORT_BLOQUE )
+            {
+                if ( verbose )
+                    printf("[Switch %s] Commutation : destination sur Port %zu, mais ce port est BLOQUÉ. Trame jetée.\n", mac_sw_str, port_sortie);
+                return;
+            }
+
+            size_t voisin_idx = SIZE_MAX;
+            size_t cable_idx_sortie = SIZE_MAX;
+            if ( obtenir_voisin_par_port(r, eq_idx, port_sortie, &voisin_idx, &cable_idx_sortie) )
+            {
+                if ( verbose )
+                {
+                    printf("[Switch %s] Commutation monocast : envoi direct de la trame via le Port %zu vers l'équipement %zu\n",
+                           mac_sw_str, port_sortie, voisin_idx);
+                }
+                propager_trame_recue(r, voisin_idx, cable_idx_sortie, tr, visite, verbose);
+            }
+        }
+        else
+        {
+            if ( verbose )
+            {
+                printf("[Switch %s] Destination %s inconnue ou broadcast. Inondation (Flooding)...\n",
+                       mac_sw_str, mac_dst_str);
+            }
+
+            for ( size_t p = 0; p < sw->nb_port; p++ )
+            {
+                if ( p == port_entree )
+                    continue;
+
+                if ( sw->ports[p].etat == ETAT_PORT_BLOQUE )
+                {
+                    if ( verbose )
+                        printf("[Switch %s] Inondation : Port %zu ignoré car BLOQUÉ.\n", mac_sw_str, p);
+                    continue;
+                }
+
+                size_t voisin_idx = SIZE_MAX;
+                size_t cable_idx_sortie = SIZE_MAX;
+                if ( obtenir_voisin_par_port(r, eq_idx, p, &voisin_idx, &cable_idx_sortie) )
+                {
+                    if ( verbose )
+                    {
+                        printf("[Switch %s] Inondation : envoi de la trame sur le Port %zu vers l'équipement %zu\n",
+                               mac_sw_str, p, voisin_idx);
+                    }
+                    bool *visite_branche = malloc(sizeof(bool) * r->nb_equipements);
+                    if ( visite_branche )
+                    {
+                        memcpy(visite_branche, visite, sizeof(bool) * r->nb_equipements);
+                        propager_trame_recue(r, voisin_idx, cable_idx_sortie, tr, visite_branche, verbose);
+                        free(visite_branche);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void envoyer_trame(reseau_local *r, size_t eq_source_idx, MAC destination_mac, trame *tr, bool verbose)
+{
+    if ( eq_source_idx >= r->nb_equipements )
+    {
+        printf("Erreur : Équipement source invalide (%zu)\n", eq_source_idx);
+        return;
+    }
+
+    equipement *source_eq = &r->equipements[eq_source_idx];
+    if ( source_eq->type_equ != STATION )
+    {
+        printf("Erreur : Seules les stations peuvent initier l'envoi de trames de données.\n");
+        return;
+    }
+
+    char mac_src_str[19], mac_dst_str[19];
+    mac_to_str(&tr->source, mac_src_str);
+    mac_to_str(&tr->destination, mac_dst_str);
+
+    printf("\n>>> TRANSMISSION DE TRAME : %s -> %s (Message: \"%s\") <<<\n",
+           mac_src_str, mac_dst_str, (char *)tr->data);
+
+    size_t cable_idx = SIZE_MAX;
+    for ( size_t i = 0; i < r->nb_cables; i++ )
+    {
+        if ( r->cables[i].sommet1 == eq_source_idx || r->cables[i].sommet2 == eq_source_idx )
+        {
+            cable_idx = i;
+            break;
+        }
+    }
+
+    if ( cable_idx == SIZE_MAX )
+    {
+        printf("Erreur : La station source n'est connectée à aucun câble !\n");
+        return;
+    }
+
+    size_t voisin_idx = (r->cables[cable_idx].sommet1 == eq_source_idx)
+                            ? r->cables[cable_idx].sommet2
+                            : r->cables[cable_idx].sommet1;
+
+    bool *visite = calloc(r->nb_equipements, sizeof(bool));
+    if ( visite == NULL )
+        return;
+
+    visite[eq_source_idx] = true;
+
+    propager_trame_recue(r, voisin_idx, cable_idx, tr, visite, verbose);
+
+    free(visite);
+}
+

@@ -127,6 +127,8 @@ bool stp_traiter_trame_recue(reseau_local *r, size_t id_switch_recepteur,
     size_t port_local = obtenir_port_local(r, id_switch_recepteur, cable_idx);
     if ( port_local < sw->nb_port )
     {
+        switch_apprendre_mac(sw, trame_recue->source, port_local);
+
         if ( !sw->ports[port_local].a_recu_bpdu ||
              bpdu_est_meilleur(&bpdu_recu, &sw->ports[port_local].meilleur_bpdu_recu) )
         {

@@ -80,25 +80,22 @@ void afficher_table(switch_ *sw)
 {
     if ( sw->taille_tab == 0 )
     {
-        printf("table vide");
+        printf("table vide\n");
     }
     else
     {
-        for ( size_t i = 0; i < sw->nb_port; i++ )
-            printf("|          port: %zu           ", i);
-        printf("\n");
-        MAC *tab[sw->nb_port];
-        for ( size_t i = 0; i < sw->nb_port; i++ )
-            tab[i] = NULL;
+        printf("\n  +------+-------------------+\n");
+        printf("  | Port | Adresse MAC       |\n");
+        printf("  +------+-------------------+\n");
         for ( size_t i = 0; i < sw->taille_tab; i++ )
-            tab[sw->tab[i].interface_port] = &sw->tab[i].mac;
-        for ( size_t i = 0; i < sw->nb_port; i++ )
-            if ( tab[i] == NULL )
-                printf("| NULL      ");
-            else
-                printf("| %02X:%02X:%02X:%02X:%02X:%02X\n", tab[i]->bytes[0],
-                       tab[i]->bytes[1], tab[i]->bytes[2], tab[i]->bytes[3],
-                       tab[i]->bytes[4], tab[i]->bytes[5]);
+        {
+            printf("  | %4zu | %02X:%02X:%02X:%02X:%02X:%02X |\n",
+                   sw->tab[i].interface_port,
+                   sw->tab[i].mac.bytes[0], sw->tab[i].mac.bytes[1],
+                   sw->tab[i].mac.bytes[2], sw->tab[i].mac.bytes[3],
+                   sw->tab[i].mac.bytes[4], sw->tab[i].mac.bytes[5]);
+        }
+        printf("  +------+-------------------+\n");
     }
 }
 
