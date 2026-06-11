@@ -2,7 +2,7 @@
 #include "../include/equipement.h"
 #include "../include/stp.h"
 
-int main(int argc, char *argv[])
+int main( void )
 {
     reseau_local r;
     init_reseau(&r);

@@ -110,7 +110,12 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
         return ERR_FICHIER_NON_TROUVE;
 
     char ligne[1024];
-    fgets(ligne, sizeof(ligne), f);
+
+    if ( fgets(ligne, sizeof(ligne), f) == NULL )
+    {
+        fclose(f);
+        return ERR_LECTURE;
+    }
 
     size_t expected_equipements = 0;
     size_t expected_cables = 0;
@@ -119,7 +124,13 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
     // lire chaque equipement
     for ( size_t eq = 0; eq < expected_equipements; eq++ )
     {
-        fgets(ligne, sizeof(ligne), f);
+        if ( fgets(ligne, sizeof(ligne), f) == NULL )
+        {
+            fclose(f);
+            return ERR_LECTURE;
+        }
+
+        //on enlève le \n à la fin de la ligne
         ligne[strcspn(ligne, "\n")] = '\0';
 
         if ( ligne[0] == '1' ) //station
@@ -155,7 +166,12 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
     // cables
     for ( size_t c = 0; c < expected_cables; c++ )
     {
-        fgets(ligne, sizeof(ligne), f);
+        if ( fgets(ligne, sizeof(ligne), f) == NULL )
+        {
+            fclose(f);
+            return ERR_LECTURE;
+        }
+
         ligne[strcspn(ligne, "\n")] = '\0';
 
         char *token = strtok(ligne, ";");
