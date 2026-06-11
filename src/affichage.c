@@ -84,7 +84,7 @@ void mac_to_str(MAC *mac, char *buffer)
 void ip_to_str(IPV4 *ip, char *buffer)
 {
     /* Écrit la représentation décimale de l'IP dans le buffer */
-    sprintf(buffer, "%i.%i.%i.%i\n", ip->bytes[0], ip->bytes[1], ip->bytes[2],
+    sprintf(buffer, "%i.%i.%i.%i", ip->bytes[0], ip->bytes[1], ip->bytes[2],
             ip->bytes[3]);
 }
 
@@ -126,7 +126,7 @@ void afficher_reseau(reseau_local *reseau)
             /* Convertit la MAC en chaîne pour l'affichage */
             char macstr[19];  /* 17 caractères "XX:XX:XX:XX:XX:XX" + '\0' = 18, on prend 19 par sécurité */
             mac_to_str(&sw->mac, macstr);
-            printf("adresse mac: %s ", macstr);
+            printf("adresse mac: %s\n", macstr);
         }
         else
         {
@@ -141,8 +141,7 @@ void afficher_reseau(reseau_local *reseau)
             /* Affiche l'adresse IP de la station */
             char ipstr[17];  /* "XXX.XXX.XXX.XXX" = 15 chars + '\n' + '\0' = 17 */
             ip_to_str(&st->ipv4, ipstr);
-            printf("adresse ipv4: %s ", ipstr);
-            printf("----------------------------------------------------------------------------\n");
+            printf("adresse ipv4: %s\n", ipstr);
         }
     }
 }
