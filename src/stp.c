@@ -1,5 +1,4 @@
 #include "../include/stp.h"
-#include "../include/affichage.h"
 
 /* Adresse MAC multicast "all bridges" pour les trames BPDU */
 const MAC MAC_ALL_BRIDGES = {{0x01, 0x80, 0xC2, 0x00, 0x00, 0x00}};

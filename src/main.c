@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
     reseau_local r;
     init_reseau(&r);
 
-    if ( charger_reseau("configs/config5.txt", &r) != ERR_OK )
+    if ( charger_reseau("configs/config2.txt", &r) != ERR_OK )
         printf("Erreur dans le chargement\n");
 
     printf("Le réseau est il un arbre ? %b\n", est_un_arbre(&r));
@@ -21,9 +21,6 @@ int main(int argc, char *argv[])
 
     printf("\n=== États des ports APRÈS STP ===\n");
     afficher_etat_port_reseau(&r);
-
-    afficher_reseau(&r);
-    printf("Le réseau (après STP) est il un arbre ? %b\n", est_un_arbre(&r));
 
     reseau_local arbre;
     if ( construire_arbre_selon_reseau(&r, &arbre) )
