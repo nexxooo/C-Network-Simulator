@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
     reseau_local r;
     init_reseau(&r);
 
-    if ( charger_reseau("configs/config2.txt", &r) != ERR_OK )
+    if ( charger_reseau("configs/config5.txt", &r) != ERR_OK )
         printf("Erreur dans le chargement\n");
 
     /* Affichage initial du réseau */
