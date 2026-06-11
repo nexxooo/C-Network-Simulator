@@ -127,11 +127,6 @@ void afficher_reseau(reseau_local *reseau)
             char macstr[19];  /* 17 caractères "XX:XX:XX:XX:XX:XX" + '\0' = 18, on prend 19 par sécurité */
             mac_to_str(&sw->mac, macstr);
             printf("adresse mac: %s ", macstr);
-
-            /* Affiche la table de commutation du switch (port → MAC connues) */
-            printf("table de commutation:\n");
-            afficher_table(sw);
-            printf("\n-----------------------------------------------");
         }
         else
         {
@@ -165,102 +160,6 @@ void afficher_cables(const reseau_local *r)
     for ( size_t i = 0; i < r->nb_cables; i++ )
         printf("%zu --> %zu\n", r->cables[i].sommet1,
                r->cables[i].sommet2);  /* Affiche les deux extrémités du câble */
-}
-
-/**
- * @brief Affiche la table de commutation d'un switch sous forme de tableau formaté.
- *
- * La table de commutation associe chaque adresse MAC apprise à un numéro de port.
- * Exemple de sortie :
- *   +------+-------------------+
- *   | Port | Adresse MAC       |
- *   +------+-------------------+
- *   |    0 | 54:D6:A6:82:C5:01 |
- *   +------+-------------------+
- *
- * @param sw  Pointeur vers le switch dont afficher la table.
- */
-void afficher_table(switch_ *sw)
-{
-    if ( sw->taille_tab == 0 )
-    {
-        /* La table est vide : aucune adresse MAC n'a encore été apprise */
-        printf("table vide\n");
-    }
-    else
-    {
-        /* Affiche un tableau ASCII avec un séparateur horizontal */
-        printf("\n  +------+-------------------+\n");
-        printf("  | Port | Adresse MAC       |\n");
-        printf("  +------+-------------------+\n");
-
-        /* Itère sur toutes les entrées de la table */
-        for ( size_t i = 0; i < sw->taille_tab; i++ )
-        {
-            printf("  | %4zu | %02X:%02X:%02X:%02X:%02X:%02X |\n",
-                   sw->tab[i].interface_port,         /* Numéro de port */
-                   /* Les 6 octets de l'adresse MAC en hexadécimal (format XX) */
-                   sw->tab[i].mac.bytes[0], sw->tab[i].mac.bytes[1],
-                   sw->tab[i].mac.bytes[2], sw->tab[i].mac.bytes[3],
-                   sw->tab[i].mac.bytes[4], sw->tab[i].mac.bytes[5]);
-        }
-        printf("  +------+-------------------+\n");
-    }
-}
-
-/**
- * @brief Affiche une trame Ethernet de façon "user-friendly" (lisible).
- *
- * Affiche seulement les informations utiles pour l'utilisateur :
- * l'adresse source et la destination.
- *
- * @param tr  Pointeur vers la trame à afficher.
- */
-void afficher_tram_user(trame *tr)
-{
-    printf("TRAM: \n ________________________________ \n adresse source:");
-    afficher_mac(&tr->source);        /* Affiche la MAC source */
-    printf("destination:\n");
-    afficher_mac(&tr->destination);   /* Affiche la MAC destination */
-}
-
-/**
- * @brief Affiche une trame Ethernet octet par octet en hexadécimal (format "brut").
- *
- * Affiche TOUS les octets de la trame tels qu'ils circulent sur le câble.
- * Utile pour déboguer au niveau protocole.
- *
- * @param tr  Pointeur vers la trame à afficher.
- */
-void afficher_tram_brute(trame *tr)
-{
-    printf("TRAM BRUTE: \n");
-
-    /* Affiche les 7 octets du préambule et le SFD */
-    for ( int i = 0; i < 7; i++ )
-        printf("%02X ", tr->preambule[i]);  /* Devrait afficher "AA AA AA AA AA AA AA" */
-    printf("%02X \n", tr->SFD);              /* Devrait afficher "AB" */
-
-    /* Affiche les 6 octets de la MAC destination */
-    for ( int i = 0; i < 6; i++ )
-        printf("%02X ", tr->destination.bytes[i]);
-
-    /* Affiche les 6 octets de la MAC source */
-    for ( int i = 0; i < 6; i++ )
-        printf("%02X ", tr->source.bytes[i]);
-    printf("\n");
-
-    /* Affiche le champ type (EtherType) */
-    printf("%02X \n", tr->type);
-
-    /* Affiche les 1500 octets de données (en hexadécimal, 16 par ligne) */
-    for ( size_t i = 0; i < 1500; i++ )
-    {
-        printf("%02X ", tr->data[i]);
-        if ( (i + 1) % 16 == 0 )  /* Retour à la ligne toutes les 16 valeurs */
-            printf("\n");
-        printf("-------------------------------------\n");
-    }
 }
 
 /* =========================================================

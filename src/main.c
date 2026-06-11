@@ -103,66 +103,7 @@ int main(int argc, char *argv[])
         free_reseau(&arbre);  /* Libère la mémoire de l'arbre (important pour éviter les fuites) */
     }
 
-    /* === SIMULATION DE TRANSMISSION DE TRAMES ETHERNET === */
 
-    printf("\n==================================================\n");
-    printf("  SIMULATION DE COMMUTATION DE TRAMES ETHERNET    \n");
-    printf("==================================================\n");
-
-    /* On simule uniquement si le réseau a au moins 5 équipements :
-     * Dans config2.txt : équipements 0,1,2 = switchs ; 3,4,5 = stations */
-    if ( r.nb_equipements >= 5 )
-    {
-        /* Indices des stations dans le tableau d'équipements */
-        size_t idx_station_src = 3; /* Station 1 (MAC: 54:d6:a6:82:c5:01) */
-        size_t idx_station_dst = 4; /* Station 2 (MAC: 54:d6:a6:82:c5:02) */
-
-        /* Récupère les adresses MAC des deux stations pour construire les trames */
-        MAC mac_src = r.equipements[idx_station_src].st.mac;  /* MAC de la station source */
-        MAC mac_dst = r.equipements[idx_station_dst].st.mac;  /* MAC de la station destination */
-
-        /* --- PREMIER ENVOI : Station 1 → Station 2 --- */
-        /* La première fois, les switchs ne connaissent pas encore où est la Station 2.
-         * Ils vont donc faire du "Flooding" : envoyer la trame sur TOUS les ports actifs.
-         * En même temps, ils apprennent que la Station 1 est accessible via son port d'entrée. */
-        const char *msg1 = "Hello Station 2!";
-
-        /* Crée une trame Ethernet :
-         * - source : MAC de la Station 1
-         * - destination : MAC de la Station 2
-         * - type 0x0800 : le payload est de l'IPv4
-         * - data : le message texte (converti en octets) */
-        trame t1 = creer_trame_ethernet(mac_src, mac_dst, 0x0800, (const uint8_t *)msg1, strlen(msg1) + 1);
-
-        /* Envoie la trame depuis la Station 1 à travers le réseau.
-         * `true` = mode verbeux (affiche ce qui se passe à chaque switch) */
-        envoyer_trame(&r, idx_station_src, &t1, true);
-
-        /* --- DEUXIÈME ENVOI : Station 2 → Station 1 --- */
-        /* Cette fois, les switchs ont appris où est la Station 1 (lors du premier envoi).
-         * La trame sera donc envoyée directement (Unicast/Commutation) sans flooding. */
-        const char *msg2 = "Hello back, Station 1!";
-        trame t2 = creer_trame_ethernet(mac_dst, mac_src, 0x0800, (const uint8_t *)msg2, strlen(msg2) + 1);
-        envoyer_trame(&r, idx_station_dst, &t2, true);
-
-        /* --- AFFICHAGE DES TABLES DE COMMUTATION --- */
-        /* Après les deux transmissions, chaque switch a appris les adresses MAC
-         * des stations qui ont envoyé des trames. On affiche ces tables. */
-        printf("\n=== TABLES DE COMMUTATION APRÈS TRANSMISSIONS ===\n");
-        for ( size_t i = 0; i < r.nb_equipements; i++ )
-        {
-            if ( r.equipements[i].type_equ == SWITCH )
-            {
-                /* Récupère l'adresse MAC du switch sous forme de chaîne pour l'affichage */
-                char mac_sw[19];
-                mac_to_str(&r.equipements[i].sw.mac, mac_sw);
-
-                printf("\n--- Table de commutation du Switch %zu (%s) ---\n", i, mac_sw);
-                afficher_table(&r.equipements[i].sw);  /* Affiche la table MAC→Port de ce switch */
-                printf("\n");
-            }
-        }
-    }
 
     /* === NETTOYAGE DE LA MÉMOIRE === */
 

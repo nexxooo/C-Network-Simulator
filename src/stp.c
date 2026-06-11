@@ -133,14 +133,7 @@ BPDU creer_bpdu_802_1d(size_t racine_id, size_t cout, MAC transmetteur_id)
  */
 trame encapsuler_bpdu_dans_trame(MAC source, BPDU *bpdu)
 {
-    trame t;
-
-    /* Préambule Ethernet : 7 octets à 0xAA */
-    for ( size_t i = 0; i < 7; i++ )
-        t.preambule[i] = 0xAA;
-
-    /* Start Frame Delimiter : marque la fin du préambule */
-    t.SFD = 0xAB;
+    trame t = {0};
 
     t.source = source;
     /* Les trames BPDU sont adressées en multicast (all bridges) :
@@ -150,12 +143,8 @@ trame encapsuler_bpdu_dans_trame(MAC source, BPDU *bpdu)
     /* Type 0x8809 = "Slow Protocols" (IEEE 802.3) utilisé pour STP */
     t.type = 0x8809;
 
-    /* Encapsuler le BPDU dans le champ data/bpdu de la trame (union) */
+    /* Encapsuler le BPDU dans la trame */
     t.bpdu = *bpdu;  /* Copie le BPDU par valeur dans la trame */
-
-    /* Frame Check Sequence : mis à 0 par simplification
-     * (en réalité calculé avec un CRC-32 sur la trame entière) */
-    t.FCS = 0;
 
     return t;
 }
@@ -172,7 +161,7 @@ trame encapsuler_bpdu_dans_trame(MAC source, BPDU *bpdu)
  */
 BPDU extraire_bpdu_de_trame(trame *t)
 {
-    return t->bpdu;  /* Accède directement au champ bpdu de l'union */
+    return t->bpdu;  /* Accède directement au champ bpdu */
 }
 
 /**
@@ -323,8 +312,7 @@ bool stp_traiter_trame_recue(reseau_local *r, size_t id_switch_recepteur,
     size_t port_local = obtenir_port_local(r, id_switch_recepteur, cable_idx);
     if ( port_local < sw->nb_port )  /* Vérifie que le port est valide */
     {
-        /* Apprendre la MAC source dans la table de commutation */
-        switch_apprendre_mac(sw, trame_recue->source, port_local);
+
 
         /* Met à jour le meilleur BPDU reçu sur ce port si :
          *   - C'est le premier BPDU reçu sur ce port (a_recu_bpdu == false)

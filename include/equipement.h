@@ -77,18 +77,6 @@ typedef struct station
     IPV4 ipv4;  /* Adresse IPv4 de la station (identifiant logique) */
 } station;
 
-/**
- * @brief Entrée dans la table de commutation d'un switch.
- *
- * Un switch apprend dynamiquement quelles adresses MAC sont accessibles
- * par quel port. Chaque entrée dit : "pour atteindre cette adresse MAC,
- * envoie la trame sur ce port numéro X".
- */
-typedef struct table_de_commutation
-{
-    MAC mac;               /* L'adresse MAC de la machine apprise */
-    size_t interface_port; /* Le numéro du port par lequel cette machine est accessible */
-} table_de_commutation;
 
 /**
  * @brief État possible d'un port de switch dans le protocole STP.
@@ -154,9 +142,6 @@ typedef struct switch_
     size_t nb_port;             /* Nombre de ports physiques de ce switch */
     port *ports;                /* Tableau dynamique des ports (alloué avec malloc) */
     size_t priorite;            /* Priorité STP du switch (plus petit = prioritaire pour être racine) */
-    table_de_commutation *tab;  /* Table de commutation : associe chaque MAC connue à un port */
-    size_t taille_tab;          /* Nombre d'entrées actuellement dans la table de commutation */
-    size_t taille_max;          /* Capacité maximale actuelle de la table (avant realloc) */
 
     port port_racine;           /* Le port de ce switch qui mène vers la racine STP */
     size_t cout_vers_racine;    /* Coût total du chemin de ce switch jusqu'à la racine */
@@ -337,23 +322,3 @@ bool cable_est_relie(cable *c, size_t sommet1, size_t sommet2);
  * Les ports sont numérotés dans l'ordre des câbles qui touchent ce switch.
  */
 size_t obtenir_port_local(reseau_local *r, size_t sw_idx, size_t cable_idx);
-
-/* --- Commutation et transmission de trames --- */
-
-/** Enregistre dans la table du switch que la MAC source_mac est accessible via port_entree. */
-void switch_apprendre_mac(switch_ *sw, MAC source_mac, size_t port_entree);
-
-/** Cherche dans la table du switch par quel port atteindre dest_mac. Retourne SIZE_MAX si inconnu. */
-size_t switch_trouver_port(switch_ *sw, MAC dest_mac);
-
-/**
- * Retrouve l'équipement voisin et le câble associés à un port donné d'un switch.
- * Remplit *voisin_idx et *cable_idx, retourne true si trouvé.
- */
-bool obtenir_voisin_par_port(const reseau_local *r, size_t sw_idx, size_t port_num, size_t *voisin_idx, size_t *cable_idx);
-
-/** Crée et retourne une trame Ethernet avec les champs remplis correctement. */
-trame creer_trame_ethernet(MAC source, MAC destination, uint16_t type, const uint8_t *data, size_t data_len);
-
-/** Envoie une trame depuis une station source à travers le réseau (avec apprentissage et commutation). */
-void envoyer_trame(reseau_local *r, size_t eq_source_idx, trame *tr, bool verbose);

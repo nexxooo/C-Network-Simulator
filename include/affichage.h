@@ -29,17 +29,7 @@ void afficher_ipv4(IPV4 *ip);
  */
 void afficher_reseau(reseau_local *rs);
 
-/**
- * Affiche une trame Ethernet de façon lisible (source, destination, données).
- * Version "user-friendly" : on affiche uniquement les infos utiles.
- */
-void afficher_tram_user(trame *tr);
 
-/**
- * Affiche une trame Ethernet octet par octet en hexadécimal.
- * Version "brute" : on voit tous les octets de la trame tels qu'ils circulent sur le câble.
- */
-void afficher_tram_brute(trame *tr);
 
 /* =========================================================
    FONCTIONS DE CONVERSION
@@ -74,13 +64,7 @@ void ip_to_str(IPV4 *ip, char *buffer);
    FONCTIONS D'AFFICHAGE STP
    ========================================================= */
 
-/**
- * Affiche la table de commutation d'un switch sous forme de tableau formaté :
- *   | Port | Adresse MAC       |
- *   |    0 | AA:BB:CC:DD:EE:FF |
- *   ...
- */
-void afficher_table(switch_ *sw);
+
 
 /**
  * Affiche tous les câbles du réseau au format :
