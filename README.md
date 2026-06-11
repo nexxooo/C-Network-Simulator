@@ -34,8 +34,10 @@ Le projet simule le fonctionnement physique et logique d'un réseau local. Il mo
     *   `afficher_tram_brute` : Analyse bas niveau affichant la trame complète en hexadécimal (incluant le préambule, le SFD et le bourrage de données).
 *   **Visualisation des tables de commutation** : Représentation graphique sous forme de ports des associations MAC/Interface.
 
-### ⚠️ Protocole Spanning Tree (STP) — *À faire / En cours*
-Bien que les structures de données prennent déjà en compte les attributs nécessaires au protocole **STP** (comme la priorité des commutateurs pour l'élection du *Root Bridge* et la pondération des câbles pour le calcul du coût des chemins), **l'implémentation de l'algorithme d'évitement des boucles (Spanning Tree Protocol) reste à réaliser.**
+###  Protocole Spanning Tree (STP) — 
+* implementation simplifier du stp
+    * recherche switch racine
+    * désignation des ports    
 
 ---
 
