@@ -28,11 +28,11 @@ int main(int argc, char *argv[])
     afficher_etat_port_reseau(&r);
 
     /* Affichage individuel (Switch 0) */
-    printf("\n=== Affichage individuel (Switch 0) ===\n");
-    if ( r.nb_equipements > 0 && r.equipements[0].type_equ == SWITCH )
-    {
-        afficher_etat_port_switch(&r.equipements[0].sw);
-    }
+    //printf("\n=== Affichage individuel (Switch 0) ===\n");
+    //if ( r.nb_equipements > 0 && r.equipements[0].type_equ == SWITCH )
+    //{
+      //  afficher_etat_port_switch(&r.equipements[0].sw);
+    //}
 
     afficher_reseau(&r);
     printf("Le réseau (après STP) est il un arbre ? %b\n", est_un_arbre(&r));
