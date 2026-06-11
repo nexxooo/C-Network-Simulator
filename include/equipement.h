@@ -1,8 +1,3 @@
-/**
- * @file equipement.h
- * @brief Déclaration des structures de données et des prototypes pour le réseau local (LAN).
- */
-
 #pragma once
 
 #include <stdbool.h>
@@ -14,26 +9,25 @@
 #define CAPACITE_INITIALE 12
 #define TAILLE_REALOC 24
 
-/** Adresse MAC (6 octets). */
+/*6 octets  */
 typedef struct MAC
 {
     uint8_t bytes[6];
 } MAC;
 
-/** Adresse IPv4 (4 octets). */
+/*4 octets  */
 typedef struct IPV4
 {
     uint8_t bytes[4];
 } IPV4;
 
-/** Représente une station (hôte) sur le réseau. */
 typedef struct station
 {
     MAC mac;
     IPV4 ipv4;
 } station;
 
-/** État d'un port dans le protocole STP. */
+/* etat port de la struct port */
 typedef enum etat_port
 {
     ETAT_PORT_BLOQUE,
@@ -42,15 +36,14 @@ typedef enum etat_port
     ETAT_PORT_RACINE
 } etat_port;
 
-/** BPDU (Bridge Protocol Data Unit) échangé par STP pour converger. */
+/* partie data de la trame */
 typedef struct BPDU
 {
-    size_t racine_id;       /* ID du switch considéré comme racine */
-    size_t cout;            /* Coût cumulé pour atteindre la racine */
-    MAC transmetteur_id;    /* Adresse MAC de l'émetteur du BPDU */
+    size_t racine_id;
+    size_t cout;
+    MAC transmetteur_id;
 } BPDU;
 
-/** Port physique d'un switch. */
 typedef struct port
 {
     size_t numero_port;
@@ -59,7 +52,6 @@ typedef struct port
     bool a_recu_bpdu;
 } port;
 
-/** Switch (pont réseau). */
 typedef struct switch_
 {
     MAC mac;
@@ -72,7 +64,6 @@ typedef struct switch_
     MAC racine;
 } switch_;
 
-/** Câble reliant deux équipements avec un coût (pondération). */
 typedef struct cable
 {
     size_t sommet1;
@@ -86,18 +77,16 @@ typedef enum type_equipement
     SWITCH
 } type_equipement;
 
-/** Équipement générique (station ou switch). */
 typedef struct equipement
 {
     type_equipement type_equ;
-    union
+    union // union espiègle pour stocker soit une station ou une switch
     {
         station st;
         switch_ sw;
     };
 } equipement;
 
-/** Graphe du réseau local (équipements et câbles). */
 typedef struct reseau_local
 {
     size_t equipement_capacite;
@@ -117,7 +106,6 @@ typedef enum Erreur_fichier
     ERR_OK
 } Erreur_fichier;
 
-/** Trame Ethernet IEEE 802.3 transportant des données ou un BPDU STP. */
 typedef struct trame
 {
     uint8_t preambule[7];
@@ -127,35 +115,29 @@ typedef struct trame
     uint16_t type;
     uint32_t FCS;
 
-    union
+    union //soit data classique soit le bpdu pour stp
     {
         uint8_t data[1500];
         BPDU bpdu;
     };
 } trame;
 
-/* --- Gestion du réseau --- */
 bool init_reseau(reseau_local *r);
 bool free_reseau(reseau_local *r);
 bool ajouter_equipement(equipement e, reseau_local *r);
 bool ajouter_cable(cable c, reseau_local *r);
 
-/* --- Comparaison d'adresses MAC --- */
 bool mac_est_meilleure(MAC *mac1, MAC *mac2);
 bool mac_est_egale(MAC *mac1, MAC *mac2);
 
-/* --- Chargement depuis un fichier --- */
 Erreur_fichier charger_reseau(const char *fichier, reseau_local *r);
 
-/* --- Arbre de recouvrement --- */
 bool construire_arbre_selon_reseau(reseau_local *src, reseau_local *dst);
 
-/* --- Théorie des graphes --- */
 bool est_un_arbre(reseau_local *r);
 size_t sommets_adjacent(const reseau_local *r, size_t sommet, size_t *adjacents);
 void visite_composante_connexe(reseau_local const *g, size_t ind_equip, bool *visite);
 bool reseau_est_connexe(reseau_local *r);
 
-/* --- Utilitaires câbles et ports --- */
 bool cable_est_relie(cable *c, size_t sommet1, size_t sommet2);
 size_t obtenir_port_local(reseau_local *r, size_t sw_idx, size_t cable_idx);

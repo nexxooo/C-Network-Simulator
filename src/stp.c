@@ -4,7 +4,6 @@
 /* Adresse MAC multicast "all bridges" pour les trames BPDU */
 const MAC MAC_ALL_BRIDGES = {{0x01, 0x80, 0xC2, 0x00, 0x00, 0x00}};
 
-/* Initialise chaque switch comme étant la racine par défaut, avec ses ports bloqués */
 void stp_initialiser_ponts(reseau_local *r)
 {
     for ( size_t i = 0; i < r->nb_equipements; i++ )
@@ -13,18 +12,17 @@ void stp_initialiser_ponts(reseau_local *r)
         {
             switch_ *sw = &r->equipements[i].sw;
             sw->racine = sw->mac;
-            sw->cout_vers_racine = 0;
+            sw->cout_vers_racine = 0; // tout le monde se croit racine
 
             for ( size_t j = 0; j < sw->nb_port; j++ )
             {
-                sw->ports[j].etat = ETAT_PORT_BLOQUE;
+                sw->ports[j].etat = ETAT_PORT_BLOQUE; // on bloque tt les ports
                 sw->ports[j].a_recu_bpdu = false;
             }
         }
     }
 }
 
-/* Crée un message BPDU 802.1d */
 BPDU creer_bpdu_802_1d(size_t racine_id, size_t cout, MAC transmetteur_id)
 {
     BPDU bpdu;
@@ -34,39 +32,36 @@ BPDU creer_bpdu_802_1d(size_t racine_id, size_t cout, MAC transmetteur_id)
     return bpdu;
 }
 
-/* Encapsule un BPDU dans une trame Ethernet multicast destinée à all bridges */
 trame encapsuler_bpdu_dans_trame(MAC source, BPDU *bpdu)
 {
     trame t = {0};
     t.source = source;
     t.destination = MAC_ALL_BRIDGES;
-    t.type = 0x8809; /* EtherType STP */
+    t.type = 0x8809;
     t.bpdu = *bpdu;
     return t;
 }
 
-/* Extrait le BPDU contenu dans une trame */
 BPDU extraire_bpdu_de_trame(trame *t)
 {
     return t->bpdu;
 }
 
-/* Compare deux BPDUs pour déterminer le meilleur chemin vers la racine */
 bool bpdu_est_meilleur(BPDU *bpdu1, BPDU *bpdu2)
 {
-    /* Plus petit Racine ID gagne */
+        // R1 < R2
     if ( bpdu1->racine_id < bpdu2->racine_id )
         return true;
     if ( bpdu1->racine_id > bpdu2->racine_id )
         return false;
 
-    /* Même racine → plus petit coût gagne */
+        //C1 < C2
     if ( bpdu1->cout < bpdu2->cout )
         return true;
     if ( bpdu1->cout > bpdu2->cout )
         return false;
 
-    /* Tiebreak final par la plus petite MAC du transmetteur */
+    // on compare le mac
     return mac_est_meilleure(&bpdu1->transmetteur_id, &bpdu2->transmetteur_id);
 }
 
@@ -100,7 +95,7 @@ bool stp_traiter_trame_recue(reseau_local *r, size_t id_switch_recepteur,
 {
     switch_ *sw = &r->equipements[id_switch_recepteur].sw;
 
-    /* Calcul du coût réel : coût annoncé + coût du câble entrant */
+    // cout calculé = cout BPDU recu + ponderation cable
     BPDU bpdu_extrait = extraire_bpdu_de_trame(trame_recue);
     size_t ponderation = r->cables[cable_idx].ponderation;
     BPDU bpdu_recu = creer_bpdu_802_1d(
@@ -108,14 +103,12 @@ bool stp_traiter_trame_recue(reseau_local *r, size_t id_switch_recepteur,
         bpdu_extrait.cout + ponderation,
         bpdu_extrait.transmetteur_id);
 
-    /* BPDU représentant notre propre état actuel pour comparaison */
     size_t racine_actuelle_id = get_index_par_mac(r, &sw->racine);
     BPDU bpdu_actuel = creer_bpdu_802_1d(
         racine_actuelle_id,
         sw->cout_vers_racine,
         sw->mac);
 
-    /* Sauvegarde du meilleur BPDU sur le port de réception */
     size_t port_local = obtenir_port_local(r, id_switch_recepteur, cable_idx);
     if ( port_local < sw->nb_port )
     {
@@ -127,7 +120,7 @@ bool stp_traiter_trame_recue(reseau_local *r, size_t id_switch_recepteur,
         }
     }
 
-    /* Mise à jour de la racine et du coût si le BPDU reçu est meilleur */
+    // on met a jour la racine si le bpdu est meilleur
     if ( bpdu_est_meilleur(&bpdu_recu, &bpdu_actuel) )
     {
         if ( r->equipements[bpdu_recu.racine_id].type_equ == SWITCH )
@@ -141,7 +134,7 @@ bool stp_traiter_trame_recue(reseau_local *r, size_t id_switch_recepteur,
             sw->port_racine.etat = ETAT_PORT_RACINE;
         }
 
-        return true; /* Changement d'état → propagation requise */
+        return true; // renvoie true pour apres appeler stp_diffuser_trames
     }
 
     return false;
@@ -171,7 +164,7 @@ void stp_diffuser_trames(reseau_local *r, size_t id_switch)
 
         if ( stp_traiter_trame_recue(r, voisin_id, cable_idx, &trame_a_envoyer) )
         {
-            stp_diffuser_trames(r, voisin_id); /* Propagation récursive */
+            stp_diffuser_trames(r, voisin_id);
         }
     }
 }
@@ -217,7 +210,7 @@ static void stp_determiner_ports_designes(reseau_local *r, size_t racine_idx)
 
         switch_ *sw = &r->equipements[i].sw;
 
-        /* Tous les ports de la racine sont DÉSIGNÉS */
+        // tous les ports sont désignés sur la racine
         if ( i == racine_idx )
         {
             for ( size_t p = 0; p < sw->nb_port; p++ )
@@ -243,12 +236,12 @@ static void stp_determiner_ports_designes(reseau_local *r, size_t racine_idx)
                                     ? r->cables[c].sommet2
                                     : r->cables[c].sommet1;
 
-            /* Port vers station → toujours DÉSIGNÉ */
+            // un port vers une station est designe
             if ( r->equipements[voisin_idx].type_equ == STATION )
             {
                 sw->ports[port_loc].etat = ETAT_PORT_DESIGNE;
             }
-            /* Port vers switch → plus proche de la racine ou plus petite MAC gagne */
+            // comparer la distance vers la racine
             else if ( r->equipements[voisin_idx].type_equ == SWITCH )
             {
                 switch_ *v_sw = &r->equipements[voisin_idx].sw;
@@ -275,7 +268,7 @@ void stp_resoudre_etats_ports(reseau_local *r)
     if ( racine_idx == SIZE_MAX )
         return;
 
-    /* On initialise tous les ports à BLOQUÉ */
+    // mettre tous les ports bloqués par défaut
     for ( size_t i = 0; i < r->nb_equipements; i++ )
     {
         if ( r->equipements[i].type_equ != SWITCH )
@@ -289,7 +282,6 @@ void stp_resoudre_etats_ports(reseau_local *r)
     stp_determiner_ports_designes(r, racine_idx);
 }
 
-/* Point d'entrée principal pour exécuter STP 802.1d */
 bool stp_init(reseau_local *r)
 {
     printf("============= PROTOCOLE STP 802.1d =============\n");

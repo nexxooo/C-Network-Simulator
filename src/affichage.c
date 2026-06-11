@@ -1,8 +1,3 @@
-/**
- * @file affichage.c
- * @brief Implémentation des fonctions d'affichage et de conversion réseau.
- */
-
 #include "../include/affichage.h"
 #include "../include/equipement.h"
 #include <stdint.h>
@@ -120,11 +115,16 @@ const char *etat_port_to_str(etat_port etat)
 {
     switch ( etat )
     {
-        case ETAT_PORT_BLOQUE:   return "BLOQUÉ";
-        case ETAT_PORT_INCONNU:  return "INCONNU";
-        case ETAT_PORT_DESIGNE:  return "DÉSIGNÉ";
-        case ETAT_PORT_RACINE:   return "RACINE";
-        default:                 return "INCONNU";
+        case ETAT_PORT_BLOQUE:
+            return "BLOQUÉ";
+        case ETAT_PORT_INCONNU:
+            return "INCONNU";
+        case ETAT_PORT_DESIGNE:
+            return "DÉSIGNÉ";
+        case ETAT_PORT_RACINE:
+            return "RACINE";
+        default:
+            return "INCONNU";
     }
 }
 

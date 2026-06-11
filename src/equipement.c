@@ -1,13 +1,7 @@
-/**
- * @file equipement.c
- * @brief Implémentation des fonctions de gestion du réseau local.
- */
-
 #include "../include/equipement.h"
 #include "../include/affichage.h"
 #include <string.h>
 
-/* Initialise un réseau vide (alloue les tableaux dynamiques) */
 bool init_reseau(reseau_local *r)
 {
     r->equipement_capacite = CAPACITE_INITIALE;
@@ -25,7 +19,6 @@ bool init_reseau(reseau_local *r)
     return true;
 }
 
-/* Libère toute la mémoire allouée pour le réseau */
 bool free_reseau(reseau_local *r)
 {
     r->cables_capacite = 0;
@@ -49,7 +42,6 @@ bool free_reseau(reseau_local *r)
     return true;
 }
 
-/* Initialise les ports physiques d'un switch */
 bool init_switch(switch_ *sw, size_t nb_port)
 {
     sw->nb_port = nb_port;
@@ -70,7 +62,6 @@ bool init_switch(switch_ *sw, size_t nb_port)
     return true;
 }
 
-/* Ajoute un équipement au réseau (agrandit le tableau si plein) */
 bool ajouter_equipement(equipement e, reseau_local *r)
 {
     if ( r->nb_equipements >= r->equipement_capacite )
@@ -91,7 +82,6 @@ bool ajouter_equipement(equipement e, reseau_local *r)
     return true;
 }
 
-/* Ajoute un câble au réseau (agrandit le tableau si plein) */
 bool ajouter_cable(cable c, reseau_local *r)
 {
     if ( r->nb_cables >= r->cables_capacite )
@@ -126,13 +116,13 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
     size_t expected_cables = 0;
     sscanf(ligne, "%zu %zu", &expected_equipements, &expected_cables);
 
-    /* Lecture des équipements */
+    // lire chaque equipement
     for ( size_t eq = 0; eq < expected_equipements; eq++ )
     {
         fgets(ligne, sizeof(ligne), f);
         ligne[strcspn(ligne, "\n")] = '\0';
 
-        if ( ligne[0] == '1' ) /* Station */
+        if ( ligne[0] == '1' ) //station
         {
             station st;
             char *token = strtok(ligne, ";");
@@ -144,7 +134,7 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
             equipement equ = {.type_equ = STATION, .st = st};
             ajouter_equipement(equ, r);
         }
-        else if ( ligne[0] == '2' ) /* Switch */
+        else if ( ligne[0] == '2' ) //switch
         {
             switch_ sw = {0};
             char *token = strtok(ligne, ";");
@@ -162,7 +152,7 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
         }
     }
 
-    /* Lecture des câbles */
+    // cables
     for ( size_t c = 0; c < expected_cables; c++ )
     {
         fgets(ligne, sizeof(ligne), f);
@@ -185,7 +175,6 @@ Erreur_fichier charger_reseau(const char *fichier, reseau_local *r)
     return ERR_OK;
 }
 
-/* Compare deux adresses MAC pour déterminer la meilleure (plus petite) */
 bool mac_est_meilleure(MAC *mac1, MAC *mac2)
 {
     for ( size_t i = 0; i < 6; i++ )
@@ -196,7 +185,6 @@ bool mac_est_meilleure(MAC *mac1, MAC *mac2)
     return false;
 }
 
-/* Vérifie si deux adresses MAC sont égales */
 bool mac_est_egale(MAC *mac1, MAC *mac2)
 {
     for ( size_t i = 0; i < 6; i++ )
@@ -205,7 +193,7 @@ bool mac_est_egale(MAC *mac1, MAC *mac2)
     return true;
 }
 
-/* Vérifie si le réseau est un arbre (connexe et nb_cables == nb_equipements - 1) */
+/* Fonctions de M23 */
 bool est_un_arbre(reseau_local *r)
 {
     if ( reseau_est_connexe(r) && r->nb_cables == r->nb_equipements - 1 )
@@ -228,7 +216,6 @@ size_t sommets_adjacent(const reseau_local *r, size_t sommet, size_t *adjacents)
     return n_adj;
 }
 
-/* Parcours en profondeur (DFS) d'une composante connexe */
 void visite_composante_connexe(reseau_local const *g, size_t ind_equip, bool *visite)
 {
     visite[ind_equip] = true;
@@ -241,7 +228,6 @@ void visite_composante_connexe(reseau_local const *g, size_t ind_equip, bool *vi
             visite_composante_connexe(g, adjacents[i], visite);
 }
 
-/* Vérifie si tous les sommets du réseau sont connectés (connexité) */
 bool reseau_est_connexe(reseau_local *r)
 {
     bool visite[r->nb_equipements];
@@ -262,14 +248,12 @@ bool reseau_est_connexe(reseau_local *r)
     return nbComposantes == 1;
 }
 
-/* Vérifie si un câble relie deux équipements */
 bool cable_est_relie(cable *c, size_t sommet1, size_t sommet2)
 {
     return (c->sommet1 == sommet1 && c->sommet2 == sommet2) ||
            (c->sommet1 == sommet2 && c->sommet2 == sommet1);
 }
 
-/* Récupère le numéro de port local d'un switch associé à un câble */
 size_t obtenir_port_local(reseau_local *r, size_t sw_idx, size_t cable_idx)
 {
     size_t port_loc = 0;
@@ -286,12 +270,11 @@ size_t obtenir_port_local(reseau_local *r, size_t sw_idx, size_t cable_idx)
     return SIZE_MAX;
 }
 
-/* Construit le réseau arbre résultant après exécution du protocole STP */
+/* Créer un arbre en enlevant les liens bloqués apres stp*/
 bool construire_arbre_selon_reseau(reseau_local *src, reseau_local *dst)
 {
     init_reseau(dst);
 
-    /* Copie profonde des équipements */
     for ( size_t i = 0; i < src->nb_equipements; i++ )
     {
         equipement e = src->equipements[i];
@@ -313,7 +296,6 @@ bool construire_arbre_selon_reseau(reseau_local *src, reseau_local *dst)
         }
     }
 
-    /* Filtrage des câbles (exclure les liens avec ports bloqués) */
     for ( size_t c = 0; c < src->nb_cables; c++ )
     {
         size_t s1 = src->cables[c].sommet1;
@@ -322,14 +304,12 @@ bool construire_arbre_selon_reseau(reseau_local *src, reseau_local *dst)
         equipement *e1 = &src->equipements[s1];
         equipement *e2 = &src->equipements[s2];
 
-        /* Câbles vers stations toujours conservés */
         if ( e1->type_equ == STATION || e2->type_equ == STATION )
         {
             ajouter_cable(src->cables[c], dst);
             continue;
         }
 
-        /* Liens switch-switch conservés si aucun port n'est bloqué des deux côtés */
         switch_ *sw1 = &e1->sw;
         switch_ *sw2 = &e2->sw;
 
