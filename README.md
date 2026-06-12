@@ -1,106 +1,18 @@
-# Simulation de Réseau Local (LAN)
+# Simulateur de Réseau Local (LAN)
 
-Ce projet en langage C propose une modélisation et une simulation d'un réseau local (LAN) composé de stations de travail et de commutateurs (switches) reliés par des câbles réseau. Il permet de charger dynamiquement des topologies réseau complexes depuis des fichiers de configuration, d'initialiser les tables de commutation et de manipuler des trames Ethernet.
+Ce projet en langage C propose une modélisation et une simulation d'un réseau local (LAN) composé de stations de travail et de commutateurs (switches) reliés par des câbles réseau.
 
----
+## But
 
-## 📝 Description
+Le projet a pour but de modéliser le fonctionnement physique et logique d'un réseau local et de simuler la convergence du protocole Spanning Tree (STP) afin d'éviter les boucles de routage.
 
-Le projet simule le fonctionnement physique et logique d'un réseau local. Il modélise les concepts fondamentaux des réseaux informatiques :
-*   **Adressage physique (MAC)** et **adressage logique (IPv4)**.
-*   **Équipements réseaux** :
-    *   **Stations** (ordinateurs terminaux dotés d'une adresse MAC et IP).
-    *   **Switches** (commutateurs chargés d'aiguiller les trames via des tables de commutation).
-*   **Liaisons physiques** : Connexions physiques entre équipements représentées par des câbles réseau pondérés (permettant d'évaluer le coût d'un lien).
-*   **Trames Ethernet** : Structure de données représentant une trame standard (préambule, SFD, adresses source/destination, type, données utiles de 1500 octets maximum et FCS).
+Il permet de :
+- Charger dynamiquement des topologies réseau complexes depuis des fichiers de configuration.
+- Valider la structure de la topologie (connexité, présence de cycles et structure d'arbre).
+- Simuler la distribution des messages BPDU (Bridge Protocol Data Units) entre commutateurs.
+- Résoudre l'état de chaque port (Bloqué, Racine, Désigné) pour obtenir un arbre de recouvrement (Spanning Tree) fonctionnel et sans boucle.
 
----
-
-## 🚀 Fonctionnalités
-
-### 1. Modélisation et Structures de Données
-*   Gestion dynamique de la mémoire pour l'allocation et la réallocation des équipements et des liaisons physiques.
-*   Représentation précise des trames Ethernet (brutes et formatées).
-*   Tables de commutation associées à chaque switch pour mapper les adresses MAC aux ports physiques.
-
-### 2. Chargement de Configurations Réseau
-*   Lecture et parsing automatique de fichiers texte structurés décrivant la topologie du réseau (nombre d'équipements, câbles, caractéristiques de chaque élément).
-*   Conversion à la volée des adresses IP (ex. `192.168.1.1`) et adresses MAC (ex. `00:15:5d:db:40:61`) de chaînes de caractères en octets exploitables en mémoire.
-
-### 3. Affichage et Diagnostics
-*   **Affichage de la topologie** : Résumé statistique (nombre d'équipements, nombre de câbles) et détails des interconnexions physiques.
-*   **Diagnostic de trames** :
-    *   `afficher_tram_user` : Présentation claire et structurée des informations clés (MAC source, MAC destination).
-    *   `afficher_tram_brute` : Analyse bas niveau affichant la trame complète en hexadécimal (incluant le préambule, le SFD et le bourrage de données).
-*   **Visualisation des tables de commutation** : Représentation graphique sous forme de ports des associations MAC/Interface.
-
-###  Protocole Spanning Tree (STP) — 
-* implementation simplifier du stp
-    * recherche switch racine
-    * désignation des ports    
-
----
-
-## 🛠️ Installation et Compilation
-
-### Prérequis
-*   Un compilateur C supportant la norme C23 (comme **GCC** récent).
-*   L'outil **Make** pour automatiser la compilation.
-*   Un environnement de type Unix/Linux (ou WSL sous Windows).
-
-### Compilation
-Un fichier [Makefile](file:///home/nexxo/SAE-S21/Makefile) est fourni à la racine du projet. Utilisez les commandes suivantes :
-
-*   **Compiler le projet** :
-    ```bash
-    make
-    ```
-    *Cette commande génère les fichiers objets dans le dossier `obj/` et l'exécutable `mon_programme` dans le dossier `bin/`.*
-
-*   **Exécuter le programme** :
-    ```bash
-    make run
-    ```
-
-*   **Nettoyer les fichiers objets temporaires** :
-    ```bash
-    make clean
-    ```
-
-*   **Nettoyer tous les fichiers compilés (objets et exécutable)** :
-    ```bash
-    make fclean
-    ```
-
-*   **Recompiler entièrement le projet** :
-    ```bash
-    make re
-    ```
-
----
-
-## 📂 Structure du Projet
-
-```text
-SAE-S21/
-├── bin/                 # Exécutables compilés (ex. mon_programme)
-├── configs/             # Fichiers de configuration réseau (*.txt)
-├── include/             # Fichiers d'en-tête (.h)
-│   ├── affichage.h      # Prototypes pour l'affichage et les conversions de chaînes
-│   └── equipement.h     # Définitions des structures (MAC, IP, station, switch, cable, trame)
-├── obj/                 # Fichiers objets (.o) temporaires
-├── src/                 # Code source (.c)
-│   ├── main.c           # Point d'entrée de l'application
-│   ├── affichage.c      # Implémentation des fonctions de diagnostic et d'affichage
-│   └── equipement.c     # Initialisation, allocation, libération et parsing réseau
-├── test/                # Tests unitaires / d'intégration
-├── Makefile             # Fichier de compilation automatisée
-└── README.md            # Ce fichier
-```
-
----
-
-## 📝 Format du Fichier de Configuration
+### Format du Fichier de Configuration
 
 Les fichiers de configuration (situés dans le dossier `configs/`) décrivent la topologie du réseau local selon le format suivant :
 
@@ -112,12 +24,73 @@ Les fichiers de configuration (situés dans le dossier `configs/`) décrivent la
 ...
 ```
 
-### Détail des lignes d'équipements :
-*   **Station (Type 1)** : `1;<adresse_mac>;<adresse_ip>`
-    *   *Exemple* : `1;00:15:5d:db:40:61;176.173.199.138`
-*   **Switch (Type 2)** : `2;<adresse_mac>;<nb_ports>;<priorite_stp>`
-    *   *Exemple* : `2;01:45:23:a6:f7:01;8;1024`
+- **Station (Type 1)** : `1;<adresse_mac>;<adresse_ip>`
+  - *Exemple* : `1;00:15:5d:db:40:61;176.173.199.138`
+- **Switch (Type 2)** : `2;<adresse_mac>;<nb_ports>;<priorite_stp>`
+  - *Exemple* : `2;01:45:23:a6:f7:01;8;1024`
+- **Liaisons (Câbles)** : `sommet_1;sommet_2;poids` reliants les indices des équipements (de `0` à `nb_equipements - 1`).
+  - *Exemple* : `0;1;4` relie l'équipement `0` à l'équipement `1` avec un coût physique de `4`.
 
-### Détail des liaisons (Câbles) :
-*   `sommet_1` et `sommet_2` représentent les indices de l'équipement dans le réseau (de `0` à `nb_equipements - 1`).
-*   *Exemple* : `0;1;4` relie l'équipement `0` à l'équipement `1` avec un coût/poids physique de `4`.
+## Fonctionnalités
+
+Le simulateur implémente les fonctionnalités réseau fondamentales à l'aide de structures de données dynamiques. Voici la description des fonctions les plus importantes du projet :
+
+### 1. Gestion de la Topologie Réseau
+- [charger_reseau](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L106) : Lit un fichier de configuration texte et parse son contenu pour initialiser dynamiquement en mémoire les équipements (stations, switches) et les liaisons (câbles).
+- [init_reseau](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L5) et [free_reseau](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L22) : Gèrent respectivement l'allocation initiale de la mémoire et la libération complète des ressources du réseau local.
+- [construire_arbre_selon_reseau](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L290) : Crée une copie du réseau en excluant les câbles dont les ports ont été bloqués par le protocole STP, permettant de matérialiser physiquement l'arbre de recouvrement obtenu.
+
+### 2. Algorithmes de Graphes et Analyse Structurelle
+- [est_un_arbre](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L213) : Vérifie si le réseau constitue un arbre mathématique valide, c'est-à-dire qu'il est connexe et possède exactement N-1 liaisons pour N équipements (ce qui implique l'absence de cycles).
+- [reseau_est_connexe](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L247) : Valide que tous les équipements du réseau peuvent communiquer entre eux en utilisant un parcours de graphe en profondeur récursif défini par [visite_composante_connexe](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L235).
+- [obtenir_port_local](file:///home/nexxo/C-Network-Simulator/src/equipement.c#L273) : Détermine à quel numéro de port physique d'un commutateur correspond une liaison (câble) donnée.
+
+### 3. Protocole Spanning Tree (STP - IEEE 802.1D)
+- [stp_init](file:///home/nexxo/C-Network-Simulator/src/stp.c#L284) : Fonction principale qui lance le protocole STP. Elle initialise les commutateurs, déclenche la diffusion des trames et résout les états finaux des ports.
+- [stp_initialiser_ponts](file:///home/nexxo/C-Network-Simulator/src/stp.c#L6) : Initialise chaque commutateur en tant que racine locale de départ (coût à 0) et positionne temporairement tous les ports à l'état bloqué.
+- [stp_diffuser_trames](file:///home/nexxo/C-Network-Simulator/src/stp.c#L143) : Transmet de manière récursive les trames BPDU contenant les informations de routage vers tous les switches adjacents.
+- [stp_traiter_trame_recue](file:///home/nexxo/C-Network-Simulator/src/stp.c#L92) : Traite une trame BPDU reçue. Si les informations reçues offrent un meilleur chemin vers une racine ou identifient une racine prioritaire, met à jour les informations du switch et retourne vrai pour propager ces modifications.
+- [stp_resoudre_etats_ports](file:///home/nexxo/C-Network-Simulator/src/stp.c#L264) : Analyse le réseau après convergence des échanges de BPDU afin de désigner pour chaque port son état final (RACINE, DÉSIGNÉ ou BLOQUÉ).
+
+### 4. Affichage, Diagnostics et Conversions
+- [afficher_reseau](file:///home/nexxo/C-Network-Simulator/src/affichage.c#L35) : Produit un affichage structuré sur la sortie standard détaillant chaque équipement (stations avec IP/MAC et switches avec ports).
+- [afficher_etat_port_reseau](file:///home/nexxo/C-Network-Simulator/src/affichage.c#L162) : Affiche l'état de tous les ports de chaque commutateur ainsi que le meilleur BPDU reçu par chacun.
+- [str_to_mac](file:///home/nexxo/C-Network-Simulator/src/affichage.c#L81) et [str_to_ipv4](file:///home/nexxo/C-Network-Simulator/src/affichage.c#L92) : Convertissent des chaînes de caractères représentant des adresses MAC ou IP en structures binaires exploitables.
+
+## Installation
+
+### Prérequis
+
+- Un compilateur C supportant la norme C23 (comme un compilateur GCC récent).
+- L'outil Make pour exécuter le script de build.
+- Un environnement compatible POSIX (Linux, macOS ou WSL sous Windows).
+
+### Compilation et Exécution
+
+Le projet intègre un fichier [Makefile](file:///home/nexxo/C-Network-Simulator/Makefile) à sa racine pour automatiser le cycle de vie du logiciel :
+
+- **Compiler le projet** :
+  ```bash
+  make
+  ```
+  Cette commande compile les fichiers sources, place les objets intermédiaires dans le répertoire `obj/` et produit l'exécutable dans `bin/`.
+
+- **Lancer la simulation** :
+  ```bash
+  make run
+  ```
+
+- **Nettoyer les fichiers compilés intermédiaires** :
+  ```bash
+  make clean
+  ```
+
+- **Nettoyer les fichiers compilés et l'exécutable** :
+  ```bash
+  make fclean
+  ```
+
+- **Recompiler entièrement le projet** :
+  ```bash
+  make re
+  ```
